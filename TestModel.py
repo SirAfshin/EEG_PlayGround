@@ -33,8 +33,8 @@ from models.rnns import LSTM
 
 if __name__ == "__main__":
     emotion_dim = 'valence'  # valence, dominance, or arousal
-    mat_path = 'D:\\Tutorial\\Amir Kair University\\Article_Masters\\1_SelfCode\\Python\\Masters_TestGround\\raw_data\DREAMER.mat'  # path to the DREAMER.mat file
-    io_path = 'D:\\Tutorial\\Amir Kair University\\Article_Masters\\1_SelfCode\\Python\Masters_TestGround\\saves\\datasets\\Dreamer_time_series_01'  # IO path to store the dataset
+    mat_path = './raw_data/DREAMER.mat'  # path to the DREAMER.mat file
+    io_path = './saves/datasets/Dreamer_time_series_01'  # IO path to store the dataset
 
     # Import data
     dataset = DREAMERDataset(io_path=f"{io_path}",
