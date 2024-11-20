@@ -8,6 +8,27 @@ import matplotlib.pyplot as plt
 def print_var(name, value):
     print(f"{name} : {value}")
 
+def get_num_params(model, k=1e6):
+    """
+    Calculate the total number of parameters in a given machine learning model and return the 
+    result in units of millions (if `k` is set to 1e6 by default).
+
+    Args:
+        model (torch.nn.Module): The model whose parameters are to be counted. This should be 
+                                 a PyTorch neural network model or any model that has parameters 
+                                 accessible via the `parameters()` method.
+        k (float, optional): A scaling factor (default is 1e6), which divides the total number of 
+                              parameters. This is useful for expressing the number of parameters 
+                              in units of millions, or any other unit based on the value of `k`.
+
+    Returns:
+        float: The total number of parameters in the model, scaled by the factor `k`. 
+               If `k` is set to 1e6, the result will be in millions of parameters.
+    """
+    nums = sum(p.numel() for p in model.parameters()) / k
+    return nums
+
+
 def AverageMeter():
     def __init__():
         pass

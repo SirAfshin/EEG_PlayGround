@@ -25,7 +25,7 @@ warnings.filterwarnings('ignore')
 
 # Local Imports
 from utils.log import get_logger
-from utils.utils import print_var, train_one_epoch, train_one_epoch_lstm
+from utils.utils import print_var, train_one_epoch, train_one_epoch_lstm, get_num_params
 from models.cnn import Two_Layer_CNN, Two_Layer_CNN_Pro, Simplified_CNN
 from models.rnns import LSTM
 
@@ -57,7 +57,7 @@ if __name__ == "__main__":
 
 
     print(len(dataset))
-    print(dataset[0])
+    # print(dataset[0])
     print(dataset[0][0].shape)
     print(dataset[0][1])
 
@@ -73,6 +73,9 @@ if __name__ == "__main__":
 
     
     print_var("Model is ", model)
+    print(f"Model parameter count: {get_num_params(model,1)}")
+
+    sys.exit()
 
     # loss_fn = nn.BCEWithLogitsLoss()
     loss_fn = nn.MSELoss()
