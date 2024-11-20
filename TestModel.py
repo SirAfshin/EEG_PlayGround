@@ -24,10 +24,10 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # Local Imports
+from utils.log import get_logger
 from utils.utils import print_var, train_one_epoch, train_one_epoch_lstm
 from models.cnn import Two_Layer_CNN, Two_Layer_CNN_Pro, Simplified_CNN
 from models.rnns import LSTM
-
 
 
 
