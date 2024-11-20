@@ -42,6 +42,7 @@ def train_one_epoch_lstm(model, optimizer, loss_fn, data_loader, device, epoch= 
     model.train()
     for i, (inputs, targets) in enumerate(data_loader):
         inputs, targets = inputs.to(device), targets.to(device)
+        inputs = inputs.permute(0, 2, 1) # (Batch, Length, features = 14 channels)
 
         # inputs = inputs.unsqueeze(1)
         targets = targets.float()

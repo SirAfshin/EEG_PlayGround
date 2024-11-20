@@ -68,7 +68,8 @@ if __name__ == "__main__":
     # model = Two_Layer_CNN()
     # model = Two_Layer_CNN_Pro()
     # model = Simplified_CNN()
-    model = LSTM(128,64,2,1)
+    # model = LSTM(128,64,2,1) # IT should be L*F
+    model = LSTM(14,64,2,1) # Should take 14 input features not 128 of the length 
 
     
     print_var("Model is ", model)
