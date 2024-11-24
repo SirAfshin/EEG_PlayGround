@@ -164,6 +164,9 @@ cython_debug/
 # Ignore testFiles
 *_test.py
 *_test.txt
+*_test.*
+*_nov.py
+*_nov.*
 
 # Dataset files
 DREAMER.mat

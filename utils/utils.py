@@ -12,7 +12,8 @@ def get_num_params(model, k=1e6):
     """
     Calculate the total number of parameters in a given machine learning model and return the 
     result in units of millions (if `k` is set to 1e6 by default).
-
+    k=1e6 -> Million
+    k=1e3 -> Killo
     Args:
         model (torch.nn.Module): The model whose parameters are to be counted. This should be 
                                  a PyTorch neural network model or any model that has parameters 
@@ -27,11 +28,6 @@ def get_num_params(model, k=1e6):
     """
     nums = sum(p.numel() for p in model.parameters()) / k
     return nums
-
-
-def AverageMeter():
-    def __init__():
-        pass
 
 
 def train_one_epoch(model, optimizer, loss_fn, data_loader, device, epoch= None):
