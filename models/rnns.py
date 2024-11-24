@@ -35,6 +35,8 @@ class LSTM(nn.Module):
         self.fc2 = nn.Linear(128, num_classes)
 
     def forward(self, x):
+        x = x.permute(0, 2, 1) # (Batch, Length, features = 14 channels)
+
         # Initialize hidden state and cell state with random values
         h0 = torch.randn(self.num_layers, x.size(0), self.hidden_size).to(x.device)
         c0 = torch.randn(self.num_layers, x.size(0), self.hidden_size).to(x.device)

@@ -30,11 +30,16 @@ from models.cnn import Two_Layer_CNN, Two_Layer_CNN_Pro, Simplified_CNN
 from models.rnns import LSTM
 
 
+_DataSets = ['Dreamer_time_series_01',
+             ]
+
 
 if __name__ == "__main__":
+    dataset_name = 'Dreamer_time_series_01'
     emotion_dim = 'valence'  # valence, dominance, or arousal
+    
     mat_path = './raw_data/DREAMER.mat'  # path to the DREAMER.mat file
-    io_path = './saves/datasets/Dreamer_time_series_01'  # IO path to store the dataset
+    io_path = f'./saves/datasets/{dataset_name}'  # IO path to store the dataset
 
     # Import data
     dataset = DREAMERDataset(io_path=f"{io_path}",
@@ -65,11 +70,11 @@ if __name__ == "__main__":
     dataloader = DataLoader(dataset, batch_size= 128, shuffle= True)
     print_var("len(dataloader)",len(dataloader))
 
-    model = Two_Layer_CNN()
+    # model = Two_Layer_CNN()
     # model = Two_Layer_CNN_Pro()
     # model = Simplified_CNN()
     # model = LSTM(128,64,2,1) # IT should be L*F
-    # model = LSTM(14,64,2,1) # Should take 14 input features not 128 of the length 
+    model = LSTM(14,128,4,1) # Should take 14 input features not 128 of the length 
 
     
     print_var("Model is ", model)
@@ -79,13 +84,13 @@ if __name__ == "__main__":
 
     loss_fn = nn.BCEWithLogitsLoss()
     # loss_fn = nn.MSELoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.01)
+    optimizer = optim.Adam(model.parameters(), lr=0.0001)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
     loss_hist = []
-    acc = []
+    acc_hist = []
     num_epochs = 30
     print("\nStart Training Process")
     for epoch in range(num_epochs):
@@ -94,10 +99,11 @@ if __name__ == "__main__":
         model, loss, acc = train_one_step_tqdm(model.to(device),dataloader,loss_fn,optimizer, device, epoch,True)
 
         loss_hist.append(loss)
+        acc_hist.append(acc)
     print("Done!")
     plt.figure()
     plt.plot(range(num_epochs), loss_hist)
     plt.figure()
-    plt.plot(range(num_epochs), acc)
+    plt.plot(range(num_epochs), acc_hist)
     plt.show()
     
