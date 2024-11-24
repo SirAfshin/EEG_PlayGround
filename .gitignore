@@ -172,7 +172,7 @@ cython_debug/
 DREAMER.mat
 *.csv
 *.mdb
-*.md
+# *.md
 
 # Ignore all .mdb files in any _record folder
 saves/datasets/*/*/eeg/data.mdb
