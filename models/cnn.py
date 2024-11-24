@@ -44,7 +44,7 @@ class Two_Layer_CNN(nn.Module):
 
     def forward(self, x):
         # print_var('x', x.shape)
-
+        x = x.unsqueeze(1)
         x1 = self.max_pool(self.activation_func(self.conv_spatial(x)))
         x2 = self.max_pool(self.activation_func(self.conv_temporal(x)))
         x3 = self.max_pool(self.activation_func(self.conv_spatial_temporal(x)))

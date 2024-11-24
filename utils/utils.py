@@ -1,8 +1,14 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import TensorDataset, DataLoader
+from torch.utils.data import TensorDataset, DataLoader, random_split
 import matplotlib.pyplot as plt
+import torch.nn.functional as F
+import pandas as pd
+from sklearn.metrics import r2_score
+from torchmetrics import Accuracy
+from torchmetrics.classification import BinaryAccuracy
+from tqdm import tqdm
 
 
 def print_var(name, value):
@@ -28,6 +34,64 @@ def get_num_params(model, k=1e6):
     """
     nums = sum(p.numel() for p in model.parameters()) / k
     return nums
+
+
+# Helper class to track the average of a given metric (Your custom AverageMeter)
+class AverageMeter:
+    """Computes and stores average and current value
+    Ex:
+        train_loss_meter = AverageMeter()
+        # Then inside train loop
+        train_loss_meter.update(loss.item())
+        # After for print purpose
+        print(train_loss_meter.avg)
+    """
+    def __init__(self):
+        self.reset()
+    
+    def reset(self):
+        self.val = 0
+        self.avg = 0
+        self.sum = 0 
+        self.count = 0
+
+    def update(self, val, n=1):
+        self.val = val
+        self.sum += val * n 
+        self.count += n
+        self.avg = self.sum / self.count
+
+def train_one_step_tqdm(model, train_loader, loss_fn, optimizer, device, epoch=None, is_binary=True):
+    model.train()
+    loss_train = AverageMeter()
+
+    if is_binary:
+        acc_train = BinaryAccuracy().to(device)
+    else:
+        acc_train = Accuracy().to(device)
+    
+    with tqdm(train_loader, unit='batch') as tepoch:
+        for inputs, targets in tepoch:
+            if epoch != None:
+                tepoch.set_description(f"Epoch: {epoch}")
+            inputs = inputs.to(device)
+            targets = targets.to(device)
+            targets = targets.float()
+            
+            outputs = model(inputs)
+            loss = loss_fn(outputs.squeeze(), targets)
+
+            loss.backward()
+            optimizer.step()
+            optimizer.zero_grad()
+
+            loss_train.update(loss.item())
+            acc_train(outputs.squeeze(), targets.int())
+            
+            tepoch.set_postfix(loss= loss_train.avg,
+                                accuracy= 100.0 * acc_train.compute().item())
+
+    return model, loss_train.avg, acc_train.compute().item()
 
 
 def train_one_epoch(model, optimizer, loss_fn, data_loader, device, epoch= None):
