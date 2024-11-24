@@ -119,6 +119,8 @@ class Two_Layer_CNN_Pro(nn.Module):
         self.fc2 = nn.Linear(10, 1)
 
     def forward(self, x):
+        x = x.unsqueeze(1)
+
         # Apply convolution layers with BatchNorm and activation function
         x1 = self.max_pool(self.dropout(self.activation_func(self.bn_spatial(self.conv_spatial(x)))))
         x2 = self.max_pool(self.dropout(self.activation_func(self.bn_temporal(self.conv_temporal(x)))))

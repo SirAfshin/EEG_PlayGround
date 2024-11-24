@@ -137,6 +137,9 @@ def train_and_save(model, dataset_name, model_name, emotion_dim, dataloader, opt
     loss_hist = []
     acc_hist = []
 
+    # Initialize the best loss variable to track the least loss
+    best_loss = float('inf')  # Set to infinity initially to ensure it gets updated in the first epoch
+
     for epoch in range(num_epochs):
         # Model training (assuming train_one_step_tqdm is implemented)
         model, loss, acc = train_one_step_tqdm(model, dataloader, loss_fn, optimizer, device, epoch, True)
@@ -144,12 +147,16 @@ def train_and_save(model, dataset_name, model_name, emotion_dim, dataloader, opt
         loss_hist.append(loss)
         acc_hist.append(acc)
         
-        # Save the model checkpoint after each epoch
-        save_model_checkpoint(model, optimizer, epoch, loss, acc, save_path)
+        # Save the model checkpoint only if the current loss is better (lower) than the best loss
+        if loss < best_loss:
+            best_loss = loss  # Update the best loss
+            save_model_checkpoint(model, optimizer, epoch, loss, acc, save_path, file_name=f"best_model_checkpoint_epoch_{epoch}.pth")
+            print(f"New best model saved with loss {loss:.4f} at epoch {epoch}")
 
     # Save the training plots
     save_training_plots(loss_hist, acc_hist, save_path)
     print("Training complete and data saved!")
+
 
 
 if __name__ == "__main__":
