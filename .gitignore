@@ -184,3 +184,7 @@ saves/datasets/Dreamer_time_series_01/*/info.csv
 
 # Ignore saved model files
 saves/models/*
+
+# Ignore notebooks
+notebooks/*
+notebooks/test_model.ipynb
