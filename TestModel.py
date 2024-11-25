@@ -73,10 +73,10 @@ if __name__ == "__main__":
 
     # Choose your model
     # model = Two_Layer_CNN()
-    model = Two_Layer_CNN_Pro()
+    model = Two_Layer_CNN_Pro() ########w
     # model = Simplified_CNN()
     # model = LSTM(128,64,2,1) # IT should be L*F
-    # model = LSTM(14,128,4,1) # Should take 14 input features not 128 of the length 
+    # model = LSTM(14,256,4,1) # Should take 14 input features not 128 of the length 
 
     print(f"Selected model name : {model.__class__.__name__}")
     print(f"Model parameter count: {get_num_params(model,1)}")
@@ -84,13 +84,13 @@ if __name__ == "__main__":
 
     loss_fn = nn.BCEWithLogitsLoss()
     # loss_fn = nn.MSELoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.0001)
+    optimizer = optim.Adam(model.parameters(), lr=0.0001) # lr = 0.0001
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
     model = model.to(device)
 
-    num_epochs = 300
+    num_epochs = 500 # 300
     model_name = model.__class__.__name__
     print(f"Start training for {num_epochs} epoch")
     train_and_save(model, dataset_name, model_name, emotion_dim, dataloader, optimizer, loss_fn, device,num_epochs=num_epochs)

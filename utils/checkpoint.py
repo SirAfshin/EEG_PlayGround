@@ -128,6 +128,8 @@ def save_training_plots(loss_hist, acc_hist, save_path, file_name_prefix="traini
     print(f"Accuracy plot saved to {acc_plot_path}")
     
 
+# TODO: save only the last model and log the outputs in a file
+# TODO: save the results in different run folders
 # Training loop that calls the save functions
 def train_and_save(model, dataset_name, model_name, emotion_dim, dataloader, optimizer, loss_fn, device, num_epochs=30):
     # Create the directory to save data
