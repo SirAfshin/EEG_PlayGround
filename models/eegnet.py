@@ -31,6 +31,18 @@ class EEGNet_Normal_data(nn.Module):
 
 # Good Impelimentation for learning purposes
 # source: https://github.com/amrzhd/EEGNet/blob/main/EEGNet.py
+
+'''
+The EEGNet model architecture used in this project is detailed below:
+
+Block 1: Two sequential convolutional steps are performed. First, F1 2D convolutional filters of size (1, 32) are applied to capture frequency information at 2Hz and above. Then, a Depthwise Convolution of size (C, 1) is used to learn a spatial filter. Batch Normalization and ELU nonlinearity are applied, followed by Dropout for regularization. An average pooling layer is used for dimensionality reduction.
+Block 2: Separable Convolution is used, followed by Pointwise Convolutions. Average pooling is used for dimension reduction.
+Classification Block: Features are passed directly to a softmax classification with N units, where N is the number of classes in the data.
+For further details, refer to the original EEGNet implementation.
+'''
+
+
+
 class EEGNetModel(nn.Module): # EEGNET-8,2
     def __init__(self, chans=22, classes=4, time_points=1001, temp_kernel=32,
                  f1=16, f2=32, d=2, pk1=8, pk2=16, dropout_rate=0.5, max_norm1=1, max_norm2=0.25):
