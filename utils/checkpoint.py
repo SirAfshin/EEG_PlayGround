@@ -173,6 +173,13 @@ def train_and_save(model, dataset_name, model_name, emotion_dim, dataloader, opt
     save_path, log_path, run_num = create_save_directory(dataset_name, model_name, emotion_dim)
     log_handle = get_logger(os.path.join(log_path, f"report_{run_num}_{dataset_name}_{model_name}_{emotion_dim}.txt"))
 
+
+    # Log Model and Trainer Info
+    log_handle.info(f"Using data set [{dataset_name}] with emotion demention [{emotion_dim}]")
+    log_handle.info(f"Training model [{model_name}]")
+    log_handle.info(f"Using Optimizer [{optimizer.__class__.__name__}] with learning rate = {optimizer.param_groups[0]['lr']}")
+    log_handle.info(f"Using Loss Function [{loss_fn.__class__.__name__}]")
+
     # Lists to store loss and accuracy values
     loss_hist = []
     acc_hist = []
@@ -199,8 +206,6 @@ def train_and_save(model, dataset_name, model_name, emotion_dim, dataloader, opt
         
         # save acc and loss plot each 50 epochs
         if epoch % 50 == 0  and epoch != 0:
-            print(epoch % 10)
-            print('Here')
             save_training_plots(loss_hist, acc_hist, save_path)
 
 
