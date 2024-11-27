@@ -29,68 +29,56 @@ class EEGNet_Normal_data(nn.Module):
 
 
 
+# Good Impelimentation for learning purposes
+# source: https://github.com/amrzhd/EEGNet/blob/main/EEGNet.py
+class EEGNetModel(nn.Module): # EEGNET-8,2
+    def __init__(self, chans=22, classes=4, time_points=1001, temp_kernel=32,
+                 f1=16, f2=32, d=2, pk1=8, pk2=16, dropout_rate=0.5, max_norm1=1, max_norm2=0.25):
+        super(EEGNetModel, self).__init__()
+        # Calculating FC input features
+        linear_size = (time_points//(pk1*pk2))*f2
 
+        # Temporal Filters
+        self.block1 = nn.Sequential(
+            nn.Conv2d(1, f1, (1, temp_kernel), padding='same', bias=False),
+            nn.BatchNorm2d(f1),
+        )
+        # Spatial Filters
+        self.block2 = nn.Sequential(
+            nn.Conv2d(f1, d * f1, (chans, 1), groups=f1, bias=False), # Depthwise Conv
+            nn.BatchNorm2d(d * f1),
+            nn.ELU(),
+            nn.AvgPool2d((1, pk1)),
+            nn.Dropout(dropout_rate)
+        )
+        self.block3 = nn.Sequential(
+            nn.Conv2d(d * f1, f2, (1, 16),  groups=f2, bias=False, padding='same'), # Separable Conv
+            nn.Conv2d(f2, f2, kernel_size=1, bias=False), # Pointwise Conv
+            nn.BatchNorm2d(f2),
+            nn.ELU(),
+            nn.AvgPool2d((1, pk2)),
+            nn.Dropout(dropout_rate)
+        )
+        self.flatten = nn.Flatten()
+        self.fc = nn.Linear(linear_size, classes)
 
-# source:  https://github.com/weilheim/EEG/blob/master/model/eegnet.py
-class _EEGNet(nn.Module): ##  not working now
-    """2D convolutional neural network for single EEG frame."""
-    VALIDENDPOINT = ('logit', 'predict')
+        # Apply max_norm constraint to the depthwise layer in block2
+        self._apply_max_norm(self.block2[0], max_norm1)
 
-    def __init__(self, num_class,
-                 input_channel,
-                 hidden_size,
-                 kernel_size,
-                 stride,
-                 avgpool_size=4,
-                 dropout=0.1):
-        super(EEGNet, self).__init__()
+        # Apply max_norm constraint to the linear layer
+        self._apply_max_norm(self.fc, max_norm2)
 
-        assert len(kernel_size) == len(hidden_size)
-        assert len(kernel_size) == len(stride)
-        self.num_layer = len(kernel_size)
-        self.num_class = num_class
-        self.input_channel = input_channel
-        self.dropout = dropout
+    def _apply_max_norm(self, layer, max_norm):
+        for name, param in layer.named_parameters():
+            if 'weight' in name:
+                param.data = torch.renorm(param.data, p=2, dim=0, maxnorm=max_norm)
 
-        in_channel = self.input_channel
-        layer = 1
-        self.projections = nn.ModuleList()
-        self.residualnorms = nn.ModuleList()
-        self.convolutions = nn.ModuleList()
-        self.batchnorms = nn.ModuleList()
-        for (out_channel, kernel_width, s) in zip(hidden_size, kernel_size, stride):
-            pad = (kernel_size - 1) // 2
-            self.projections.append(nn.Conv1d(in_channel, out_channel, kernel_size=1, stride=s, bias=False)
-                                    if in_channel != out_channel or s != 1 else None)
-            self.residualnorms.append(nn.BatchNorm2d(out_channel)
-                                      if in_channel != out_channel or s != 1 else None)
-            self.convolutions.append(nn.Conv2d(in_channel, out_channel,
-                                               kernel_size=kernel_width, stride=s, padding=pad, bias=False))
-            self.batchnorms.append(nn.BatchNorm2d(out_channel, eps=1e-5, affine=True))
-            in_channel = out_channel
-        # avgpool_size should equal to size of the feature map,
-        # otherwise self.predict will break.
-        self.avgpool = nn.AvgPool2d(kernel_size=avgpool_size)
-        self.predict = nn.Linear(hidden_size[-1], self.num_class, bias=True)
-
-    def forward(self, x, endpoint='predict'):
-        if endpoint not in self.VALIDENDPOINT:
-            raise ValueError('Unknown endpoint {:s}'.format(endpoint))
-
-        for proj, rbn, conv, bn in zip(self.projections, self.residualnorms,
-                                  self.convolutions, self.batchnorms):
-            if proj is not None:
-                residual = proj(x)
-                residual = rbn(residual)
-            else:
-                residual = x
-            x = F.dropout(x, p=self.dropout, training=self.training)
-            x = conv(x)
-            x = bn(x)
-            x = (x + residual)
-            x = F.relu(x)
-        x = self.avgpool(x)
-        if endpoint == 'logit':
-            return x
-        x = self.predict(x)
+    def forward(self, x):
+        x = self.block1(x)
+        x = self.block2(x)
+        x = self.block3(x)
+        x = self.flatten(x)
+        x = self.fc(x)
         return x
+
+

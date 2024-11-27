@@ -196,6 +196,14 @@ def train_and_save(model, dataset_name, model_name, emotion_dim, dataloader, opt
             # save_model_checkpoint(model, optimizer, epoch, loss, acc, save_path, file_name=f"best_model_checkpoint_epoch_{epoch}.pth")
             save_model_checkpoint(model, optimizer, epoch, loss, acc, save_path, file_name=f"best_model_checkpoint.pth")
             print(f"New best model saved with loss {loss:.4f} at epoch {epoch}")
+        
+        # save acc and loss plot each 50 epochs
+        if epoch % 50 == 0  and epoch != 0:
+            print(epoch % 10)
+            print('Here')
+            save_training_plots(loss_hist, acc_hist, save_path)
+
+
 
     # Save the training plots
     save_training_plots(loss_hist, acc_hist, save_path)
