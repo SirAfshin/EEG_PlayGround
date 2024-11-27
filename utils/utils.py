@@ -82,6 +82,8 @@ def train_one_step_tqdm(model, train_loader, loss_fn, optimizer, device, epoch=N
             loss = loss_fn(outputs.squeeze(), targets)
 
             loss.backward()
+            # Gradient Clipping
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0) ## NEW ADDITION
             optimizer.step()
             optimizer.zero_grad()
 
@@ -92,6 +94,56 @@ def train_one_step_tqdm(model, train_loader, loss_fn, optimizer, device, epoch=N
                                 accuracy= 100.0 * acc_train.compute().item())
 
     return model, loss_train.avg, acc_train.compute().item()
+
+
+def validation(model, test_loader, loss_fn, device='cpu', is_binary=True, num_classes=None):
+    model.eval()
+    with torch.no_grad():
+        loss_valid = AverageMeter()
+        if is_binary:
+            acc_valid = BinaryAccuracy().to(device)
+        else:
+            acc_valid = Accuracy(task='multiclass', num_classes= num_classes6).to(device)
+
+        for i, (inputs, targets) in enumerate(test_loader):
+            inputs = inputs.to(device)
+            targets = targets.to(device)
+            targets = targets.float()
+
+            outputs = model(inputs)
+            loss = loss_fn(outputs.squeeze(), targets)
+
+        loss_valid.update(loss.item())
+        acc_valid(outputs.squeeze(), targets.int())
+    return loss_valid.avg, acc_valid.compute().item()
+
+def validation_with_tqdm(model, test_loader, loss_fn, device='cpu', is_binary=True, num_classes=None):
+    model.eval()
+    with torch.no_grad():
+        loss_valid = AverageMeter()
+        if is_binary:
+            acc_valid = BinaryAccuracy().to(device)
+        else:
+            acc_valid = Accuracy(task='multiclass', num_classes= num_classes6).to(device)
+
+
+    with tqdm(test_loader, unit='batch') as tepoch:
+        for inputs, targets in tepoch:
+            tepoch.set_description(f"Validation - ")
+
+            inputs = inputs.to(device)
+            targets = targets.to(device)
+            targets = targets.float()
+
+            outputs = model(inputs)
+            loss = loss_fn(outputs.squeeze(), targets)
+
+            loss_valid.update(loss.item())
+            acc_valid(outputs.squeeze(), targets.int())
+            tepoch.set_postfix(loss= loss_valid.avg,
+                                accuracy= 100.0 * acc_valid.compute().item())
+
+    return loss_valid.avg, acc_valid.compute().item()
 
 
 def train_one_epoch(model, optimizer, loss_fn, data_loader, device, epoch= None):
