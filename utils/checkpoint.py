@@ -6,10 +6,11 @@ project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, project_root)  
 
 import time
-import os
+import json
 import torch
 import matplotlib.pyplot as plt
 from utils.utils import get_num_params, train_one_step_tqdm
+from utils.log import get_logger
 
 def load_model(model_path, model_class, optimizer=None, **kwargs):
     """
@@ -65,10 +66,46 @@ def create_save_directory(dataset_name, model_name, emotion_dim):
     Returns:
     - save_path: str, the path where the model and data will be saved.
     """
+
+    # run_file = f'./run_numbers.json'
+    run_file = os.path.join('saves', 'models','run_numbers.json')
+   
+    # Load or initialize run numbers
+    if os.path.exists(run_file):
+        with open(run_file, 'r') as file:
+            run_numbers = json.load(file)
+    else:
+        run_numbers = {}
+    
+    # Ensure the emotion_dim exists and initialize it as a dictionary if necessary
+    if emotion_dim not in run_numbers:
+        run_numbers[emotion_dim] = {}
+
+    # Initialize the model_name if it doesn't exist for the current emotion_dim
+    if model_name not in run_numbers[emotion_dim]:
+        run_numbers[emotion_dim][model_name] = 0
+
+    # Increment the run number for the current model_name and emotion_dim
+    run_numbers[emotion_dim][model_name] += 1    
+
+        
+    # Save the updated run numbers back to the file
+    with open(run_file, 'w') as file:
+        json.dump(run_numbers, file, indent=4)
+
+
+    # Get the current run number
+    run_num = run_numbers[emotion_dim][model_name]
+   
+    # Define log file path
+    log_path = os.path.join('saves', 'models', dataset_name, model_name, 'logs')
+    os.makedirs(log_path, exist_ok=True)
+
     # timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")  # Get the current time
-    save_path = os.path.join('saves', 'models', dataset_name, model_name, emotion_dim)
+    save_path = os.path.join('saves', 'models', dataset_name, model_name, emotion_dim, str(run_num))
     os.makedirs(save_path, exist_ok=True)
-    return save_path
+
+    return save_path, log_path, run_num
 
 
 def save_model_checkpoint(model, optimizer, epoch, loss, acc, save_path, file_name="model_checkpoint.pth"):
@@ -133,8 +170,9 @@ def save_training_plots(loss_hist, acc_hist, save_path, file_name_prefix="traini
 # Training loop that calls the save functions
 def train_and_save(model, dataset_name, model_name, emotion_dim, dataloader, optimizer, loss_fn, device, num_epochs=30):
     # Create the directory to save data
-    save_path = create_save_directory(dataset_name, model_name, emotion_dim)
-    
+    save_path, log_path, run_num = create_save_directory(dataset_name, model_name, emotion_dim)
+    log_handle = get_logger(os.path.join(log_path, f"report_{run_num}_{dataset_name}_{model_name}_{emotion_dim}.txt"))
+
     # Lists to store loss and accuracy values
     loss_hist = []
     acc_hist = []
@@ -142,17 +180,21 @@ def train_and_save(model, dataset_name, model_name, emotion_dim, dataloader, opt
     # Initialize the best loss variable to track the least loss
     best_loss = float('inf')  # Set to infinity initially to ensure it gets updated in the first epoch
 
+    log_handle.info("Start Training")
     for epoch in range(num_epochs):
         # Model training (assuming train_one_step_tqdm is implemented)
         model, loss, acc = train_one_step_tqdm(model, dataloader, loss_fn, optimizer, device, epoch, True)
         
+        log_handle.info(f"[Train] Epoch {epoch} - Loss: {loss}, Acc: {acc} ")
+
         loss_hist.append(loss)
         acc_hist.append(acc)
         
         # Save the model checkpoint only if the current loss is better (lower) than the best loss
         if loss < best_loss:
             best_loss = loss  # Update the best loss
-            save_model_checkpoint(model, optimizer, epoch, loss, acc, save_path, file_name=f"best_model_checkpoint_epoch_{epoch}.pth")
+            # save_model_checkpoint(model, optimizer, epoch, loss, acc, save_path, file_name=f"best_model_checkpoint_epoch_{epoch}.pth")
+            save_model_checkpoint(model, optimizer, epoch, loss, acc, save_path, file_name=f"best_model_checkpoint.pth")
             print(f"New best model saved with loss {loss:.4f} at epoch {epoch}")
 
     # Save the training plots
