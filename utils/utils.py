@@ -9,7 +9,7 @@ from sklearn.metrics import r2_score
 from torchmetrics import Accuracy
 from torchmetrics.classification import BinaryAccuracy
 from tqdm import tqdm
-
+import re
 
 def print_var(name, value):
     print(f"{name} : {value}")
@@ -142,9 +142,28 @@ def train_one_epoch_lstm(model, optimizer, loss_fn, data_loader, device, epoch= 
     
     return model, loss.item()
 
-def train_one_epoch_tqdm():
-    pass
 
+def get_loss_acc_from_log(file_path):
+    # Regular expression pattern to match loss and accuracy values
+    pattern = r"Loss:\s([0-9\.]+),\sAcc:\s([0-9\.]+)"
+
+    # Initialize lists to store loss and accuracy values
+    losses = []
+    accuracies = []
+
+    # Open the file and extract the desired values
+    with open(file_path, 'r') as file:
+        # Read the file line by line
+        for line in file:
+            # Search for the pattern in the line
+            match = re.search(pattern, line)
+            if match:
+                # Extract the loss and accuracy values and append to lists
+                loss = float(match.group(1))
+                acc = float(match.group(2))
+                losses.append(loss)
+                accuracies.append(acc)
+    return losses, accuracies
 
 
 
