@@ -173,6 +173,7 @@ def train_and_save(model, dataset_name, model_name, emotion_dim, dataloader, opt
 
 
     # Log Model and Trainer Info
+    log_handle.info("Using only train save function!")
     log_handle.info(f"Using data set [{dataset_name}] with emotion demention [{emotion_dim}]")
     log_handle.info(f"Training model [{model_name}]")
     log_handle.info(f"Using Optimizer [{optimizer.__class__.__name__}] with learning rate = {optimizer.param_groups[0]['lr']}")
@@ -217,9 +218,10 @@ def train_validate_and_save(model, dataset_name, model_name, emotion_dim, train_
     # Create the directory to save data
     save_path, log_path, run_num = create_save_directory(dataset_name, model_name, emotion_dim)
     log_handle = get_logger(os.path.join(log_path, f"report_{run_num}_{dataset_name}_{model_name}_{emotion_dim}.txt"))
-
+    
 
     # Log Model and Trainer Info
+    log_handle.info("Using train and validate save function!")
     log_handle.info(f"Using data set [{dataset_name}] with emotion demention [{emotion_dim}]")
     log_handle.info(f"Training model [{model_name}]")
     log_handle.info(f"Using Optimizer [{optimizer.__class__.__name__}] with learning rate = {optimizer.param_groups[0]['lr']}")
@@ -266,7 +268,8 @@ def train_validate_and_save(model, dataset_name, model_name, emotion_dim, train_
     # Save the training plots
     save_training_plots(loss_hist, acc_hist, save_path)
     save_training_plots(loss_val_hist, acc_val_hist, save_path,file_name_prefix="validation")
-
+    log_handle.info(f"Model Parameter Count: {get_num_params(model,1)} ")
+    
     print("Training complete and data saved!")
 
     return loss_hist, acc_hist , loss_val_hist , acc_val_hist
