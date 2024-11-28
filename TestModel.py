@@ -80,10 +80,10 @@ if __name__ == "__main__":
     # model = Simplified_CNN()
     # model = LSTM(128,64,2,1) # IT should be L*F
     # model = LSTM(14,256,4,1) # Should take 14 input features not 128 of the length  ##############w 
-    # model = LSTM_CNN_Model() ########## 95.5
+    model = LSTM_CNN_Model() ########## 95.5
     # model = TSCEPTIONModel()  ############ 
     # model = YOLO9_Backbone_Classifier()
-    model = EEGNet_Normal_data()
+    # model = EEGNet_Normal_data()
 
 
     print(f"Selected model name : {model.__class__.__name__}")
@@ -93,7 +93,7 @@ if __name__ == "__main__":
     loss_fn = nn.BCEWithLogitsLoss()
     # loss_fn = nn.MSELoss()
 
-    optimizer = optim.Adam(model.parameters(), lr=0.01) # lr = 0.0001  0.001
+    optimizer = optim.Adam(model.parameters(), lr=0.001) # lr = 0.0001  0.001
     # optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.937)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
