@@ -82,8 +82,8 @@ def train_one_step_tqdm(model, train_loader, loss_fn, optimizer, device, epoch=N
             loss = loss_fn(outputs.squeeze(), targets)
 
             loss.backward()
-            # Gradient Clipping
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0) ## NEW ADDITION
+            # Weight Clipping
+            # torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0) ## NEW ADDITION
             optimizer.step()
             optimizer.zero_grad()
 
