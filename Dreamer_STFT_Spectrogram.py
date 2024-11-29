@@ -60,8 +60,8 @@ if __name__ == "__main__":
     dataset = DREAMERDataset(io_path=f"{io_path}",
                             mat_path=mat_path,
                             offline_transform=transforms.Compose([
+                                STFTSpectrogram(n_fft=64, hop_length=32, contourf=False),
                                 transforms.MeanStdNormalize(),#MeanStdNormalize() , MinMaxNormalize()
-                                STFTSpectrogram(n_fft=64, hop_length=32, contourf=False)
                             ]),
                             online_transform=transforms.Compose([
                                 transforms.ToTensor(),
