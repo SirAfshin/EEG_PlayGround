@@ -27,7 +27,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # Local Imports
-from utils.checkpoint import train_and_save,  train_validate_and_save
+from utils.checkpoint import train_and_save,  train_validate_and_save, train_validate_test_and_save
 from utils.log import get_logger
 from utils.utils import print_var, train_one_epoch, train_one_epoch_lstm, get_num_params, train_one_step_tqdm
 from utils.transforms import STFTSpectrogram
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     batch_size = 256
 
     dataset_name = _DataSets[3]
-    emotion_dim = 'valence'  # valence, dominance, or arousal
+    emotion_dim = 'arousal'  # valence, dominance, or arousal
     
     mat_path = './raw_data/DREAMER.mat'  # path to the DREAMER.mat file
     io_path = f'./saves/datasets/{dataset_name}'  # IO path to store the dataset
@@ -130,12 +130,13 @@ if __name__ == "__main__":
     print(f"Start training for {num_epochs} epoch")
 
     model = model.to(device)
-    loss_hist, acc_hist , loss_val_hist , acc_val_hist = train_validate_and_save(model, 
+    loss_hist, acc_hist , loss_val_hist , acc_val_hist = train_validate_test_and_save(model, 
                                                                                  dataset_name, 
                                                                                  model_name, 
                                                                                  emotion_dim, 
                                                                                  train_loader, 
-                                                                                 val_loader, 
+                                                                                 val_loader,
+                                                                                 test_loader,  
                                                                                  optimizer, 
                                                                                  loss_fn, 
                                                                                  device, 

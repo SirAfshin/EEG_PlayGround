@@ -124,7 +124,7 @@ def validation_with_tqdm(model, test_loader, loss_fn, device='cpu', is_binary=Tr
         if is_binary:
             acc_valid = BinaryAccuracy().to(device)
         else:
-            acc_valid = Accuracy(task='multiclass', num_classes= num_classes6).to(device)
+            acc_valid = Accuracy(task='multiclass', num_classes= num_classes).to(device)
 
 
     with tqdm(test_loader, unit='batch') as tepoch:

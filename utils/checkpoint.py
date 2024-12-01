@@ -275,6 +275,73 @@ def train_validate_and_save(model, dataset_name, model_name, emotion_dim, train_
     return loss_hist, acc_hist , loss_val_hist , acc_val_hist
 
 
+def train_validate_test_and_save(model, dataset_name, model_name, emotion_dim, train_loader, val_loader, test_loader, optimizer, loss_fn, device, num_epochs=30, is_binary= True):
+    # Create the directory to save data
+    save_path, log_path, run_num = create_save_directory(dataset_name, model_name, emotion_dim)
+    log_handle = get_logger(os.path.join(log_path, f"report_{run_num}_{dataset_name}_{model_name}_{emotion_dim}.txt"))
+    
+
+    # Log Model and Trainer Info
+    log_handle.info("Using train and validate save function!")
+    log_handle.info(f"Using data set [{dataset_name}] with emotion demention [{emotion_dim}]")
+    log_handle.info(f"Training model [{model_name}]")
+    log_handle.info(f"Using Optimizer [{optimizer.__class__.__name__}] with learning rate = {optimizer.param_groups[0]['lr']}")
+    log_handle.info(f"Using Loss Function [{loss_fn.__class__.__name__}]")
+
+    # Lists to store loss and accuracy values
+    loss_hist = []
+    acc_hist = []
+    loss_val_hist = []
+    acc_val_hist = []
+
+    # Initialize the best loss variable to track the least loss
+    best_loss = float('inf')  # Set to infinity initially to ensure it gets updated in the first epoch
+
+    log_handle.info("Start Training")
+    for epoch in range(num_epochs):
+        # Model training (assuming train_one_step_tqdm is implemented)
+        model, loss, acc = train_one_step_tqdm(model, train_loader, loss_fn, optimizer, device, epoch, True)
+        # Model validating (using validation loader)
+        loss_val, acc_val = validation_with_tqdm(model,val_loader, loss_fn, device, is_binary)
+
+        log_handle.info(f"[Train] Epoch {epoch} - Loss: {loss}, Acc: {acc} ")
+        log_handle.info(f"[Valdiation] Epoch {epoch} - Loss_Val: {loss_val}, Acc_Val: {acc_val}")
+
+        loss_hist.append(loss)
+        acc_hist.append(acc)
+        loss_val_hist.append(loss_val)
+        acc_val_hist.append(acc_val)
+        
+        # Save the model checkpoint only if the current loss is better (lower) than the best loss
+        if loss < best_loss:
+            best_loss = loss  # Update the best loss
+            # save_model_checkpoint(model, optimizer, epoch, loss, acc, save_path, file_name=f"best_model_checkpoint_epoch_{epoch}.pth")
+            save_model_checkpoint(model, optimizer, epoch, loss, acc, save_path, file_name=f"best_model_checkpoint.pth")
+            print(f"New best model saved with loss {loss:.4f} at epoch {epoch}")
+        
+        # save acc and loss plot each 50 epochs
+        if epoch % 50 == 0  and epoch != 0:
+            save_training_plots(loss_hist, acc_hist, save_path)
+            save_training_plots(loss_val_hist, acc_val_hist, save_path,file_name_prefix="validation")
+
+    # Test model performance on test data
+    loss_test, acc_test = validation_with_tqdm(model,test_loader, loss_fn, device, is_binary)
+    log_handle.info(f"[Test] Loss: {loss_test} , Accuracy: {acc_test}")
+
+    # Save the training plots
+    save_training_plots(loss_hist, acc_hist, save_path)
+    save_training_plots(loss_val_hist, acc_val_hist, save_path,file_name_prefix="validation")
+    
+    
+    log_handle.info(f"Model Parameter Count: {get_num_params(model,1)} ")
+    
+    print("Training complete and data saved!")
+
+    return loss_hist, acc_hist , loss_val_hist , acc_val_hist , loss_test, acc_test
+
+
+
+
 if __name__ == "__main__":
     import math
     from sklearn.metrics import accuracy_score
