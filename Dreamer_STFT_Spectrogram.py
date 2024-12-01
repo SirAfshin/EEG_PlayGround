@@ -124,26 +124,27 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
     
-    num_epochs = 600 # 300 500 600
+    num_epochs = 5 # 300 500 600
     model_name = model.__class__.__name__
 
     print(f"Start training for {num_epochs} epoch")
 
     model = model.to(device)
-    loss_hist, acc_hist , loss_val_hist , acc_val_hist = train_validate_test_and_save(model, 
-                                                                                 dataset_name, 
-                                                                                 model_name, 
-                                                                                 emotion_dim, 
-                                                                                 train_loader, 
-                                                                                 val_loader,
-                                                                                 test_loader,  
-                                                                                 optimizer, 
-                                                                                 loss_fn, 
-                                                                                 device, 
-                                                                                 num_epochs=num_epochs)
+    loss_hist, acc_hist , loss_val_hist , acc_val_hist, loss_test, acc_test = train_validate_test_and_save(model, 
+                                                                                    dataset_name, 
+                                                                                    model_name, 
+                                                                                    emotion_dim, 
+                                                                                    train_loader, 
+                                                                                    val_loader,
+                                                                                    test_loader,  
+                                                                                    optimizer, 
+                                                                                    loss_fn, 
+                                                                                    device, 
+                                                                                    num_epochs=num_epochs)
 
 
     print("Training process is done!")
+    print(f"Test: LOSS: {loss_test}, ACC: {acc_test}")
     print(f"Model parameter count: {get_num_params(model,1)}")
 
     # # Plot Losses
