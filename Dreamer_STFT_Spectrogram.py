@@ -33,6 +33,8 @@ from utils.utils import print_var, train_one_epoch, train_one_epoch_lstm, get_nu
 from utils.transforms import STFTSpectrogram
 
 from models.STFT_Spectrogram.stft_cnn import STFT_Two_Layer_CNN_Pro
+from models.STFT_Spectrogram.stft_cnn_lstm import STFT_LSTM_CNN_Model
+
 
 _DataSets = ['Dreamer_time_series_01',
              'Dreamer_Freq_01',
@@ -45,8 +47,8 @@ if __name__ == "__main__":
     rng_num =  2024 #122
     batch_size = 256
 
-    dataset_name = _DataSets[3]
-    emotion_dim = 'arousal'  # valence, dominance, or arousal
+    dataset_name = 'Dreamer_STFT_Spectrogram'
+    emotion_dim = 'valence'  # valence, dominance, or arousal
     
     mat_path = './raw_data/DREAMER.mat'  # path to the DREAMER.mat file
     io_path = f'./saves/datasets/{dataset_name}'  # IO path to store the dataset
@@ -104,8 +106,8 @@ if __name__ == "__main__":
     print('*' * 30)
 
     # ****************** Choose your Model ******************************
-    model = STFT_Two_Layer_CNN_Pro() ########## 95.5
-
+    # model = STFT_Two_Layer_CNN_Pro() ########## 95.5
+    model = STFT_LSTM_CNN_Model()
 
     print(f"Selected model name : {model.__class__.__name__}")
     # print(f"Model parameter count: {get_num_params(model,1)}")
@@ -124,7 +126,7 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
     
-    num_epochs = 5 # 300 500 600
+    num_epochs = 600 # 300 500 600
     model_name = model.__class__.__name__
 
     print(f"Start training for {num_epochs} epoch")

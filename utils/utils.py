@@ -83,7 +83,7 @@ def train_one_step_tqdm(model, train_loader, loss_fn, optimizer, device, epoch=N
 
             loss.backward()
             # Weight Clipping
-            # torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0) ## NEW ADDITION
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=0.5) ## 0.5 NEW ADDITION
             optimizer.step()
             optimizer.zero_grad()
 
@@ -103,7 +103,7 @@ def validation(model, test_loader, loss_fn, device='cpu', is_binary=True, num_cl
         if is_binary:
             acc_valid = BinaryAccuracy().to(device)
         else:
-            acc_valid = Accuracy(task='multiclass', num_classes= num_classes6).to(device)
+            acc_valid = Accuracy(task='multiclass', num_classes= num_classes).to(device)
 
         for i, (inputs, targets) in enumerate(test_loader):
             inputs = inputs.to(device)
