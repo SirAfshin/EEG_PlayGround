@@ -1,3 +1,10 @@
+import sys
+import os
+
+# Dynamically add the root directory to sys.path
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, project_root)  
+
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
@@ -12,7 +19,7 @@ from torchmetrics.classification import BinaryAccuracy
 from tqdm import tqdm
 import re
 
-from .utils import AverageMeter
+from utils.utils import AverageMeter
 
 # TODO: implement Self Distillation !
 
@@ -25,7 +32,7 @@ def loss_fn_kd(outputs, labels, teacher_outputs, T=10, alpha=0.6):
     return loss
 
 # train is different but you must use a normal validation to check how the student model performs
-def train_one_epoch_kd_tqdm(student, teacher,  train_loader, loss_fn_kd, optimizer, device, epoch=None, is_binary=True):
+def train_one_epoch_kd_tqdm(student, teacher,  train_loader, loss_fn_kd, optimizer, device, epoch=None, is_binary=True,num_classes=3):
     teacher.eval()
     student.train()
     loss_train = AverageMeter()
@@ -33,7 +40,7 @@ def train_one_epoch_kd_tqdm(student, teacher,  train_loader, loss_fn_kd, optimiz
     if is_binary:
         acc_train = BinaryAccuracy().to(device)
     else:
-        acc_train = Accuracy().to(device)
+        acc_train = Accuracy(task="multiclass",num_classes=num_classes).to(device)
     
     with tqdm(train_loader, unit='batch') as tepoch:
         for inputs, targets in tepoch:
@@ -64,5 +71,39 @@ def train_one_epoch_kd_tqdm(student, teacher,  train_loader, loss_fn_kd, optimiz
     return student, loss_train.avg, acc_train.compute().item()
 
 if __name__ =="__main__":
-    teacher = torch.load('teacher.pt')
+    # teacher = torch.load('teacher.pt')
+    # teacher.eval()
+
+    teacher = nn.Sequential(nn.Linear(10,30),nn.Linear(30,3))
     teacher.eval()
+
+    student = nn.Sequential(nn.Linear(10,3))
+
+    data = torch.randn(100,10)
+    target = torch.randn(100,3)
+    print(data.shape)
+    print(target.shape)
+
+    dataset = TensorDataset(data, target)
+    train_loader = DataLoader(dataset, batch_size= 10, shuffle= True)
+    print(len(train_loader))
+    
+    optimizer = optim.Adam(student.parameters(), lr=0.01)
+
+    
+    loss_hist = []
+    acc_hist = []
+    num_epochs = 10
+    for epoch in range(num_epochs):
+        student, loss, acc = train_one_epoch_kd_tqdm(student, teacher,  train_loader,\
+                                                    loss_fn_kd, optimizer, device='cpu', \
+                                                    epoch=epoch, is_binary=False)
+        loss_hist.append(loss)
+        acc_hist.append(acc)
+
+    plt.figure(num= 1)
+    plt.plot(range(num_epochs), loss_hist)
+    plt.figure(num= 2)
+    plt.plot(range(num_epochs), acc_hist)
+    plt.show()
+    
