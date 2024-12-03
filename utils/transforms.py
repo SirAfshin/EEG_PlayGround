@@ -6,7 +6,10 @@ from torcheeg.transforms.base_transform import EEGTransform
 import io 
 import random
 import scipy.signal as signal
+import torchaudio ## TODO: install
+import pywt ## TODO: install # PyWavelets for Continuous Wavelet Transform
 
+# Spectrogram Transforms
 class STFTSpectrogram(EEGTransform):
     r'''
     A transform method to convert EEG signals of each channel into spectrograms using Short-Time Fourier Transform (STFT).
@@ -90,6 +93,167 @@ class STFTSpectrogram(EEGTransform):
                 'window': self.window,
                 'contourf': self.contourf
             })
+
+class MelSpectrogram(EEGTransform):
+    '''
+    A transform method to convert EEG signals of each channel into Mel spectrograms.
+
+    Args:
+        sample_rate (int): The sampling rate of the EEG signal (default: 1000).
+        n_fft (int): The size of the FFT window (default: 64).
+        hop_length (int): The hop length between successive windows (default: 32).
+        n_mels (int): The number of Mel frequency bins (default: 40).
+        contourf (bool): Whether to output the spectrogram as an image with filled contours (default: False).
+
+    Returns:
+        A dictionary containing the transformed EEG data as Mel spectrograms.
+    '''
+    def __init__(self,
+                 sample_rate: int = 1000,
+                 n_fft: int = 64,
+                 hop_length: int = 32,
+                 n_mels: int = 40,
+                 contourf: bool = False,
+                 apply_to_baseline: bool = False):
+        super(MelSpectrogram, self).__init__(apply_to_baseline=apply_to_baseline)
+        self.sample_rate = sample_rate
+        self.n_fft = n_fft
+        self.hop_length = hop_length
+        self.n_mels = n_mels
+        self.contourf = contourf
+
+    def __call__(self,
+                 *args,
+                 eeg: np.ndarray,
+                 baseline: Union[np.ndarray, None] = None,
+                 **kwargs) -> Dict[str, np.ndarray]:
+        return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
+
+    def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+        channel_list = []
+        for channel in eeg:
+            channel_list.append(self.opt(channel))
+        return np.array(channel_list)
+
+    def opt(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+        # Convert the EEG signal into a tensor
+        eeg_tensor = torch.tensor(eeg, dtype=torch.float32)
+
+        # Use torchaudio to compute Mel Spectrogram
+        mel_spec = torchaudio.transforms.MelSpectrogram(
+            sample_rate=self.sample_rate,
+            n_fft=self.n_fft,
+            hop_length=self.hop_length,
+            n_mels=self.n_mels
+        )(eeg_tensor)
+
+        # Optionally, apply logarithmic scaling
+        log_mel_spec = torch.log(mel_spec + 1e-7)
+
+        if self.contourf:
+            # Visualization option: Generate filled contour plots for each channel
+            fig, ax = plt.subplots(figsize=(10, 4))
+            ax.imshow(log_mel_spec.numpy(), aspect='auto', origin='lower', cmap='jet')
+            ax.set_xlabel('Time')
+            ax.set_ylabel('Mel Frequency')
+            ax.set_title('Mel Spectrogram')
+
+            # Save the plot as an image in a byte buffer
+            with io.BytesIO() as buf:
+                fig.savefig(buf, format='raw')
+                buf.seek(0)
+                img_data = np.frombuffer(buf.getvalue(), dtype=np.uint8)
+                img_w, img_h = fig.canvas.get_width_height()
+                img_data = img_data.reshape((int(img_h), int(img_w), -1))
+
+            return img_data
+
+        return log_mel_spec.numpy()
+
+    @property
+    def repr_body(self) -> Dict:
+        return dict(
+            super().repr_body, **{
+                'sample_rate': self.sample_rate,
+                'n_fft': self.n_fft,
+                'hop_length': self.hop_length,
+                'n_mels': self.n_mels,
+                'contourf': self.contourf
+            })
+
+class CWTSpectrogram(EEGTransform):
+    '''
+    A transform method to convert EEG signals into spectrograms using Continuous Wavelet Transform (CWT).
+
+    Args:
+        wavelet (str): The type of wavelet to use (default: 'cmor').
+        scales (list or np.ndarray): The scales for the wavelet transform (default: 1 to 128).
+        contourf (bool): Whether to output the spectrogram as an image with filled contours (default: False).
+
+    Returns:
+        A dictionary containing the transformed EEG data as CWT spectrograms.
+    '''
+    def __init__(self,
+                 wavelet: str = 'cmor',
+                 scales: np.ndarray = np.arange(1, 128),
+                 contourf: bool = False,
+                 apply_to_baseline: bool = False):
+        super(CWTSpectrogram, self).__init__(apply_to_baseline=apply_to_baseline)
+        self.wavelet = wavelet
+        self.scales = scales
+        self.contourf = contourf
+
+    def __call__(self,
+                 *args,
+                 eeg: np.ndarray,
+                 baseline: Union[np.ndarray, None] = None,
+                 **kwargs) -> Dict[str, np.ndarray]:
+        return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
+
+    def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+        channel_list = []
+        for channel in eeg:
+            channel_list.append(self.opt(channel))
+        return np.array(channel_list)
+
+    def opt(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+        # Perform CWT for each channel
+        cwt_result = []
+        for signal_channel in eeg:
+            coeffs, _ = pywt.cwt(signal_channel, self.scales, self.wavelet)
+            cwt_result.append(coeffs)
+        
+        cwt_result = np.array(cwt_result)
+
+        if self.contourf:
+            # Visualization option: Generate filled contour plots for each channel
+            fig, ax = plt.subplots(figsize=(10, 4))
+            ax.imshow(cwt_result, aspect='auto', origin='lower', cmap='jet')
+            ax.set_xlabel('Time')
+            ax.set_ylabel('Scale')
+            ax.set_title('CWT Spectrogram')
+
+            # Save the plot as an image in a byte buffer
+            with io.BytesIO() as buf:
+                fig.savefig(buf, format='raw')
+                buf.seek(0)
+                img_data = np.frombuffer(buf.getvalue(), dtype=np.uint8)
+                img_w, img_h = fig.canvas.get_width_height()
+                img_data = img_data.reshape((int(img_h), int(img_w), -1))
+
+            return img_data
+
+        return cwt_result
+
+    @property
+    def repr_body(self) -> Dict:
+        return dict(
+            super().repr_body, **{
+                'wavelet': self.wavelet,
+                'scales': self.scales,
+                'contourf': self.contourf
+            })
+
 
 # Augmentation transforms
 class TimeShiftEEG(EEGTransform):
