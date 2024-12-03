@@ -4,6 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from torcheeg.transforms.base_transform import EEGTransform
 import io 
+import random
+import scipy.signal as signal
 
 class STFTSpectrogram(EEGTransform):
     r'''
@@ -89,6 +91,122 @@ class STFTSpectrogram(EEGTransform):
                 'contourf': self.contourf
             })
 
+# Augmentation transforms
+class TimeShiftEEG(EEGTransform):
+    def __init__(self, max_shift: int = 10, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.max_shift = max_shift
+
+    def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+        shift = random.randint(-self.max_shift, self.max_shift)
+        eeg_shifted = np.roll(eeg, shift, axis=-1)  # Time shift along the last axis (time)
+        return eeg_shifted
+
+class TimeStretchEEG(EEGTransform):
+    def __init__(self, stretch_factor: float = 1.0, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.stretch_factor = stretch_factor
+
+    def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+        num_samples = eeg.shape[-1]
+        new_length = int(num_samples * self.stretch_factor)
+        eeg_stretched = np.zeros((eeg.shape[0], new_length))  # Initialize the stretched signal array
+        for i, channel in enumerate(eeg):
+            eeg_stretched[i] = np.interp(np.linspace(0, num_samples, new_length),
+                                         np.arange(num_samples),
+                                         channel)
+        return eeg_stretched
+
+class RandomCropPadEEG(EEGTransform):
+    def __init__(self, target_length: int = 128, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.target_length = target_length
+
+    def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+        num_samples = eeg.shape[-1]
+        if num_samples > self.target_length:
+            # Random crop
+            start = random.randint(0, num_samples - self.target_length)
+            eeg_cropped = eeg[:, start:start + self.target_length]
+        else:
+            # Padding with zeros
+            eeg_padded = np.pad(eeg, ((0, 0), (0, self.target_length - num_samples)), 'constant')
+            return eeg_padded
+        return eeg_cropped
+
+class GaussianNoiseEEG(EEGTransform):
+    def __init__(self, noise_factor: float = 0.01, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.noise_factor = noise_factor
+
+    def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+        noise = np.random.normal(0, self.noise_factor, eeg.shape)
+        eeg_noisy = eeg + noise
+        return eeg_noisy
+
+class FrequencyMaskingEEG(EEGTransform):
+    def __init__(self, freq_mask_param: float = 0.2, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.freq_mask_param = freq_mask_param
+
+    def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+        num_channels, num_samples = eeg.shape
+        # Generate frequency mask
+        freq_mask_size = int(self.freq_mask_param * num_samples)
+        mask_start = random.randint(0, num_samples - freq_mask_size)
+        
+        # Mask out a portion of the frequency domain (simulating noise or missing data)
+        eeg[:, mask_start:mask_start + freq_mask_size] = 0
+        return eeg
+
+class ChannelDropoutEEG(EEGTransform):
+    def __init__(self, dropout_prob: float = 0.2, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.dropout_prob = dropout_prob
+
+    def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+        # Apply channel dropout by setting some channels to zero based on dropout probability
+        num_channels = eeg.shape[0]
+        dropout_mask = np.random.rand(num_channels) < self.dropout_prob
+        eeg_dropout = eeg.copy()
+        eeg_dropout[dropout_mask] = 0
+        return eeg_dropout
+
+class MixupEEG(EEGTransform):
+    def __init__(self, alpha: float = 0.2, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.alpha = alpha
+
+    def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+        # Choose a random sample from the batch for mixup
+        batch_size = eeg.shape[0]
+        lambda_ = np.random.beta(self.alpha, self.alpha)  # Mixup coefficient
+
+        # Randomly pick another sample to mix with
+        idx = random.randint(0, batch_size - 1)
+        eeg_mixed = lambda_ * eeg + (1 - lambda_) * eeg[idx]
+
+        return eeg_mixed
+
+class BandPassFilterEEG(EEGTransform):
+    def __init__(self, low_freq: float = 0.5, high_freq: float = 50, fs: float = 256, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.low_freq = low_freq
+        self.high_freq = high_freq
+        self.fs = fs
+
+    def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+        nyquist = 0.5 * self.fs
+        low = self.low_freq / nyquist
+        high = self.high_freq / nyquist
+
+        b, a = signal.butter(4, [low, high], btype='band')
+        eeg_filtered = np.array([signal.filtfilt(b, a, channel) for channel in eeg])
+
+        return eeg_filtered
+
+
+
 
 
 if __name__ == "__main__":
@@ -112,3 +230,21 @@ if __name__ == "__main__":
     plt.colorbar()
     plt.title('Spectrogram (contourf=True) - Channel 1')
     plt.show()
+
+
+    # EEG data (assumed to be a NumPy array of shape [num_channels, num_samples])
+    eeg_data = np.random.randn(14, 1000)  # 14 channels, 1000 samples
+
+    # Initialize the augmentation transforms
+    time_shift_transform = TimeShiftEEG(max_shift=10)
+    time_stretch_transform = TimeStretchEEG(stretch_factor=1.1)
+    gaussian_noise_transform = GaussianNoiseEEG(noise_factor=0.02)
+    freq_masking_transform = FrequencyMaskingEEG(freq_mask_param=0.2)
+    channel_dropout_transform = ChannelDropoutEEG(dropout_prob=0.2)
+
+    # Apply augmentations
+    eeg_augmented_shift = time_shift_transform.apply(eeg=eeg_data)
+    eeg_augmented_stretch = time_stretch_transform.apply(eeg=eeg_data)
+    eeg_augmented_noise = gaussian_noise_transform.apply(eeg=eeg_data)
+    eeg_augmented_freq = freq_masking_transform.apply(eeg=eeg_data)
+    eeg_augmented_channel_dropout = channel_dropout_transform.apply(eeg=eeg_data)

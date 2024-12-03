@@ -30,7 +30,7 @@ warnings.filterwarnings('ignore')
 from utils.checkpoint import train_and_save,  train_validate_and_save, train_validate_test_and_save
 from utils.log import get_logger
 from utils.utils import print_var, train_one_epoch, train_one_epoch_lstm, get_num_params, train_one_step_tqdm
-from utils.transforms import STFTSpectrogram
+from utils.transforms import *
 
 from models.STFT_Spectrogram.stft_cnn import STFT_Two_Layer_CNN_Pro
 from models.STFT_Spectrogram.stft_cnn_lstm import STFT_LSTM_CNN_Model
@@ -43,11 +43,19 @@ _DataSets = ['Dreamer_time_series_01',
              ]
 
 
+augmentation_transforms = transforms.Compose([
+    TimeShiftEEG(max_shift=10),
+    TimeStretchEEG(stretch_factor=1.1),
+    GaussianNoiseEEG(noise_factor=0.02),
+    FrequencyMaskingEEG(freq_mask_param=0.2),
+    ChannelDropoutEEG(dropout_prob=0.2),
+])
+
 if __name__ == "__main__":
     rng_num =  2024 #122
     batch_size = 32
 
-    dataset_name = 'Dreamer_STFT_Spectrogram'
+    dataset_name = 'Dreamer_STFT_Augmented'
     emotion_dim = 'valence'  # valence, dominance, or arousal
     
     mat_path = './raw_data/DREAMER.mat'  # path to the DREAMER.mat file
@@ -57,6 +65,7 @@ if __name__ == "__main__":
     dataset = DREAMERDataset(io_path=f"{io_path}",
                             mat_path=mat_path,
                             offline_transform=transforms.Compose([
+                                augmentation_transforms,  # augmentations
                                 STFTSpectrogram(n_fft=64, hop_length=32, contourf=False),
                                 transforms.MeanStdNormalize(),#MeanStdNormalize() , MinMaxNormalize()
                             ]),
@@ -73,12 +82,12 @@ if __name__ == "__main__":
                             num_worker=4)
 
 
-    # print(dataset)
-    # print(dataset[0])
-    # print(dataset[0][0].shape)
-    # print(dataset[0][1])
+    print(dataset)
+    print(dataset[0])
+    print(dataset[0][0].shape)
+    print(dataset[0][1])
 
-    # sys.exit()
+    sys.exit()
 
 
     # Split train val test 
