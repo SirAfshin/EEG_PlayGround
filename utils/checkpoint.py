@@ -340,6 +340,73 @@ def train_validate_test_and_save(model, dataset_name, model_name, emotion_dim, t
     return loss_hist, acc_hist , loss_val_hist , acc_val_hist , loss_test, acc_test
 
 
+def train_validate_test_lrschedule_and_save_(model, dataset_name, model_name, emotion_dim, train_loader, val_loader, test_loader, optimizer, loss_fn, device, num_epochs=30, is_binary=True):
+    save_path, log_path, run_num = create_save_directory(dataset_name, model_name, emotion_dim)
+    log_handle = get_logger(os.path.join(log_path, f"report_{run_num}_{dataset_name}_{model_name}_{emotion_dim}.txt"))
+    
+    # Initialize the learning rate scheduler (ReduceLROnPlateau)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=5, factor=0.5, verbose=True)
+    # early_stopping = EarlyStopping(patience=5, delta=0.01)
+
+    # Log model and training information
+    log_handle.info(f"Using dataset [{dataset_name}] with emotion dim [{emotion_dim}]")
+    log_handle.info(f"Training model [{model_name}] with optimizer [{optimizer.__class__.__name__}] and learning rate = {optimizer.param_groups[0]['lr']}")
+    
+    # Lists to store training and validation loss and accuracy
+    loss_hist, acc_hist, loss_val_hist, acc_val_hist = [], [], [], []
+    best_loss = float('inf')  # Start with an initially high loss
+    
+    log_handle.info("Start Training")
+    for epoch in range(num_epochs):
+        # Training phase
+        model, loss, acc = train_one_step_tqdm(model, train_loader, loss_fn, optimizer, device, epoch, True)
+        
+        # Validation phase
+        loss_val, acc_val = validation_with_tqdm(model, val_loader, loss_fn, device, is_binary)
+        
+        log_handle.info(f"[Train] Epoch {epoch} - Loss: {loss}, Acc: {acc}")
+        log_handle.info(f"[Validation] Epoch {epoch} - Loss_Val: {loss_val}, Acc_Val: {acc_val}")
+
+        # Store loss and accuracy for plotting
+        loss_hist.append(loss)
+        acc_hist.append(acc)
+        loss_val_hist.append(loss_val)
+        acc_val_hist.append(acc_val)
+        
+        # # Check for early stopping and save the best model
+        # if early_stopping(loss_val):
+        #     print("Early stopping triggered!")
+        #     break
+        
+        # Save the model checkpoint if it's the best loss so far
+        if loss_val < best_loss:
+            best_loss = loss_val
+            save_model_checkpoint(model, optimizer, epoch, loss, acc, save_path, file_name=f"best_model_checkpoint.pth")
+            print(f"New best model saved with validation loss {loss_val:.4f} at epoch {epoch}")
+        
+        # Update the learning rate scheduler
+        scheduler.step(loss_val)
+
+        # Save training/validation plots periodically
+        if epoch % 50 == 0 and epoch != 0:
+            save_training_plots(loss_hist, acc_hist, save_path)
+            save_training_plots(loss_val_hist, acc_val_hist, save_path, file_name_prefix="validation")
+
+    # Final test phase
+    loss_test, acc_test = validation_with_tqdm(model, test_loader, loss_fn, device, is_binary)
+    log_handle.info(f"[Test] Loss: {loss_test} , Accuracy: {acc_test}")
+
+    # Save the final training/validation plots
+    save_training_plots(loss_hist, acc_hist, save_path)
+    save_training_plots(loss_val_hist, acc_val_hist, save_path, file_name_prefix="validation")
+    
+    log_handle.info(f"Model Parameter Count: {get_num_params(model, 1)}")
+    print("Training complete and data saved!")
+
+    return loss_hist, acc_hist, loss_val_hist, acc_val_hist, loss_test, acc_test
+
+
+
 
 
 if __name__ == "__main__":

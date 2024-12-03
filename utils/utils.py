@@ -61,6 +61,46 @@ class AverageMeter:
         self.count += n
         self.avg = self.sum / self.count
 
+class EarlyStopping:
+    '''
+    Early stopping to stop training when the validation loss stops improving.
+    
+    Args:
+        patience (int): Number of epochs with no improvement after which training will be stopped. Default is 5.
+        delta (float): Minimum change in the monitored quantity to qualify as an improvement. Default is 0.01.
+        verbose (bool): If True, prints a message for each improvement or stopping event. Default is False.
+        save_best_model (bool): If True, saves the model with the best validation loss. Default is False.
+        model (torch.nn.Module): The model to be saved. Default is None.
+        save_path (str): Path where the best model will be saved if `save_best_model=True`. Default is None.
+    Example:
+        early_stopping = EarlyStopping(patience=5, delta=0.01)
+
+        for epoch in range(num_epochs):
+            # Your training and validation code...
+            if early_stopping(loss_val):
+                print("Early stopping triggered!")
+                break
+    '''
+    def __init__(self, patience=5, delta=0):
+        self.patience = patience
+        self.delta = delta
+        self.best_loss = None
+        self.counter = 0
+        self.early_stop = False
+
+    def __call__(self, val_loss):
+        if self.best_loss is None:
+            self.best_loss = val_loss
+        elif val_loss < self.best_loss - self.delta:
+            self.best_loss = val_loss
+            self.counter = 0
+        else:
+            self.counter += 1
+            if self.counter >= self.patience:
+                self.early_stop = True
+        return self.early_stop
+
+
 def train_one_step_tqdm(model, train_loader, loss_fn, optimizer, device, epoch=None, is_binary=True):
     model.train()
     loss_train = AverageMeter()
