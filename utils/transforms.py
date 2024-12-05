@@ -6,8 +6,8 @@ from torcheeg.transforms.base_transform import EEGTransform
 import io 
 import random
 import scipy.signal as signal
-import torchaudio ## TODO: install
-import pywt ## TODO: install # PyWavelets for Continuous Wavelet Transform
+# import torchaudio ## TODO: install
+# import pywt ## TODO: install # PyWavelets for Continuous Wavelet Transform
 
 # Spectrogram Transforms
 class STFTSpectrogram(EEGTransform):

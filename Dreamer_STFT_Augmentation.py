@@ -13,7 +13,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 from torcheeg import transforms
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader , ConcatDataset
 from torcheeg.datasets.constants import DREAMER_CHANNEL_LOCATION_DICT
 from torcheeg.datasets.constants import DREAMER_ADJACENCY_MATRIX
 from torcheeg.datasets import DREAMERDataset
@@ -55,14 +55,36 @@ if __name__ == "__main__":
     rng_num =  2024 #122
     batch_size = 32
 
-    dataset_name = 'Dreamer_STFT_Augmented'
+    dataset_name = 'Dreamer_STFT_Spectrogram'
     emotion_dim = 'valence'  # valence, dominance, or arousal
-    
+
     mat_path = './raw_data/DREAMER.mat'  # path to the DREAMER.mat file
     io_path = f'./saves/datasets/{dataset_name}'  # IO path to store the dataset
 
-    # Import data
-    dataset = DREAMERDataset(io_path=f"{io_path}",
+    # Import mian data
+    dataset_STFT = DREAMERDataset(io_path=f"{io_path}",
+                            mat_path=mat_path,
+                            offline_transform=transforms.Compose([
+                                STFTSpectrogram(n_fft=64, hop_length=32, contourf=False),
+                                transforms.MeanStdNormalize(),#MeanStdNormalize() , MinMaxNormalize()
+                            ]),
+                            online_transform=transforms.Compose([
+                                transforms.ToTensor(),
+                            ]),
+                            label_transform=transforms.Compose([
+                                transforms.Select(emotion_dim),
+                                transforms.Binary(threshold=2.5), 
+                            ]),
+                            chunk_size=128,
+                            baseline_chunk_size=128,
+                            num_baseline=61,
+                            num_worker=4)
+
+
+    # Import Augmented data
+    dataset_name = 'Dreamer_STFT_Augmented'
+    io_path = f'./saves/datasets/{dataset_name}'  # IO path to store the dataset
+    dataset_STFT_Augmented = DREAMERDataset(io_path=f"{io_path}",
                             mat_path=mat_path,
                             offline_transform=transforms.Compose([
                                 augmentation_transforms,  # augmentations
@@ -82,18 +104,19 @@ if __name__ == "__main__":
                             num_worker=4)
 
 
-    print(dataset)
-    print(dataset[0])
-    print(dataset[0][0].shape)
-    print(dataset[0][1])
+    # print(dataset_STFT_Augmented)
+    # print(dataset_STFT_Augmented[0])
+    # print(dataset_STFT_Augmented[0][0].shape)
+    # print(dataset_STFT_Augmented[0][1])
 
-    sys.exit()
+    # sys.exit()
 
 
     # Split train val test 
-    train_dataset, test_dataset = train_test_split_groupby_trial(dataset= dataset, test_size = 0.2, shuffle= True, random_state= rng_num)
-    train_dataset, val_dataset = train_test_split_groupby_trial(dataset= train_dataset, test_size = 0.1, shuffle=True, random_state= rng_num)
-    
+    train_dataset, test_dataset = train_test_split_groupby_trial(dataset= dataset_STFT, test_size = 0.2, shuffle= True, random_state= rng_num)
+    train_dataset, val_dataset = train_test_split_groupby_trial(dataset= train_dataset, test_size = 0.2, shuffle=True, random_state= rng_num)
+    # Add augmented data to train dataset
+    train_dataset = ConcatDataset([train_dataset, dataset_STFT_Augmented]) 
 
     # Create train/val/test dataloaders
     train_loader = DataLoader(train_dataset, batch_size= batch_size, shuffle=True)
@@ -101,10 +124,10 @@ if __name__ == "__main__":
     test_loader = DataLoader(test_dataset, batch_size= batch_size, shuffle=False)
 
     print("Dataset is ready!")
-    print(f"Dataset size: {len(dataset)}")
+    print(f"Dataset size: {len(dataset_STFT_Augmented)}")
     print(f"Train Size: {len(train_dataset)}, Validation Size: {len(val_dataset)} , Test Size: {len(test_dataset)}")
-    print(f"Input data shape: {dataset[0][0].shape}")
-    print(f"Output data (one sample): {dataset[0][1]}")
+    print(f"Input data shape: {dataset_STFT_Augmented[0][0].shape}")
+    print(f"Output data (one sample): {dataset_STFT_Augmented[0][1]}")
 
     print('*' * 30)
     
