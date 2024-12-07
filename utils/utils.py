@@ -20,6 +20,7 @@ def get_num_params(model, k=1e6):
     result in units of millions (if `k` is set to 1e6 by default).
     k=1e6 -> Million
     k=1e3 -> Killo
+    k=1 -> The actual number
     Args:
         model (torch.nn.Module): The model whose parameters are to be counted. This should be 
                                  a PyTorch neural network model or any model that has parameters 
@@ -33,6 +34,10 @@ def get_num_params(model, k=1e6):
                If `k` is set to 1e6, the result will be in millions of parameters.
     """
     nums = sum(p.numel() for p in model.parameters()) / k
+    return nums
+
+def get_num_trainable_params(model, k=1e6):
+    nums = sum(p.numel() for p in model.parameters() if p.requires_grad) / k
     return nums
 
 
