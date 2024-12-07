@@ -53,7 +53,7 @@ augmentation_transforms = transforms.Compose([
 
 if __name__ == "__main__":
     rng_num =  2024 #122
-    batch_size = 32
+    batch_size = 128
 
     dataset_name = 'Dreamer_STFT_Spectrogram'
     emotion_dim = 'valence'  # valence, dominance, or arousal
@@ -138,8 +138,8 @@ if __name__ == "__main__":
     print('*' * 30)
 
     # ****************** Choose your Model ******************************
-    # model = STFT_Two_Layer_CNN_Pro() ########## 95.5
-    model = STFT_LSTM_CNN_Model()
+    model = STFT_Two_Layer_CNN_Pro() ########## 95.5
+    # model = STFT_LSTM_CNN_Model()
 
     print(f"Selected model name : {model.__class__.__name__}")
     # print(f"Model parameter count: {get_num_params(model,1)}")
@@ -151,7 +151,7 @@ if __name__ == "__main__":
     # loss_fn = nn.MSELoss()
     
     # ****************** Choose your Optimizer ******************************
-    optimizer = optim.Adam(model.parameters(), lr=0.001) # lr = 0.0001  0.001
+    optimizer = optim.Adam(model.parameters(), lr=0.0001) # lr = 0.0001  0.001
     # optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.937)
 
 

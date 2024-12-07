@@ -18,4 +18,5 @@ class TSCEPTIONModel(nn.Module):
     def forward(self, x):# [Batch, 14, 128]
         x = x.unsqueeze(1) # [batch, 1, 14, 128]
         x = self.tsception(x)
+        x = nn.functional.sigmoid(x)
         return x

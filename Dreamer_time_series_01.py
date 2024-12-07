@@ -26,7 +26,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # Local Imports
-from utils.checkpoint import train_and_save,  train_validate_and_save
+from utils.checkpoint import train_and_save,  train_validate_and_save, train_validate_test_and_save
 from utils.log import get_logger
 from utils.utils import print_var, train_one_epoch, train_one_epoch_lstm, get_num_params, train_one_step_tqdm
 from models.cnn import Two_Layer_CNN, Two_Layer_CNN_Pro, Simplified_CNN
@@ -99,10 +99,11 @@ if __name__ == "__main__":
     # model = Simplified_CNN()
     # model = LSTM(128,64,2,1) # IT should be L*F
     # model = LSTM(14,256,4,1) # Should take 14 input features not 128 of the length  ##############w 
-    model = LSTM_CNN_Model() ########## 95.5
+    # model = LSTM_CNN_Model() ########## 95.5
     # model = TSCEPTIONModel()  ############ 
     # model = YOLO9_Backbone_Classifier()
     # model = EEGNet_Normal_data()
+    model = TSCEPTIONModel()
 
 
     print(f"Selected model name : {model.__class__.__name__}")
@@ -122,13 +123,26 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
     
-    num_epochs = 30 # 300 500 600
+    num_epochs = 300 # 300 500 600
     model_name = model.__class__.__name__
 
     print(f"Start training for {num_epochs} epoch")
 
+    # model = model.to(device)
+    # train_validate_and_save(model, dataset_name, model_name, emotion_dim, train_loader, val_loader, optimizer, loss_fn, device,num_epochs=num_epochs)
     model = model.to(device)
-    train_validate_and_save(model, dataset_name, model_name, emotion_dim, train_loader, val_loader, optimizer, loss_fn, device,num_epochs=num_epochs)
+    loss_hist, acc_hist , loss_val_hist , acc_val_hist, loss_test, acc_test = train_validate_test_and_save(model, 
+                                                                                    dataset_name, 
+                                                                                    model_name, 
+                                                                                    emotion_dim, 
+                                                                                    train_loader, 
+                                                                                    val_loader,
+                                                                                    test_loader,  
+                                                                                    optimizer, 
+                                                                                    loss_fn, 
+                                                                                    device, 
+                                                                                    num_epochs=num_epochs)
+
 
     
     print("Training process is done!")
