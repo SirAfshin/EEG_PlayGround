@@ -35,6 +35,7 @@ from models.cnn_lstm import LSTM_CNN_Model
 from models.Tsception import TSCEPTIONModel
 from models.YoloV9 import YOLO9_Backbone_Classifier
 from models.eegnet import EEGNet_Normal_data
+from models.Transformer import VanillaTransformer_time
 
 _DataSets = ['Dreamer_time_series_01',
              
@@ -103,7 +104,8 @@ if __name__ == "__main__":
     # model = TSCEPTIONModel()  ############ 
     # model = YOLO9_Backbone_Classifier()
     # model = EEGNet_Normal_data()
-    model = TSCEPTIONModel()
+    # model = TSCEPTIONModel() #### validation is Ok almost
+    model = VanillaTransformer_time()
 
 
     print(f"Selected model name : {model.__class__.__name__}")
@@ -123,7 +125,7 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
     
-    num_epochs = 300 # 300 500 600
+    num_epochs = 20 # 300 500 600
     model_name = model.__class__.__name__
 
     print(f"Start training for {num_epochs} epoch")
