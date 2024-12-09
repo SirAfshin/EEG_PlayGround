@@ -375,8 +375,10 @@ class BandPassFilterEEG(EEGTransform):
 
 if __name__ == "__main__":
     # Instantiate the transform                                  # [batch, channel, freq, time]
-    t = STFTSpectrogram(n_fft=128, hop_length=2, contourf=False) # [batch,14, 65, 65]
+    # t = STFTSpectrogram(n_fft=128, hop_length=2, contourf=False) # [batch,14, 65, 65]
     # t = STFTSpectrogram(n_fft=128, hop_length=1, contourf=False) # [batch,14, 65, 129]
+    t = STFTSpectrogram(n_fft=64, hop_length=4, contourf=False) # [batch,14, 33, 33]
+    t = STFTSpectrogram(n_fft=32, hop_length=8, contourf=False) # [batch,14, 17, 17]
 
     # Apply to EEG data (shape [channels, time_points])
     eeg_data = np.random.randn(1,14, 128)  
@@ -386,7 +388,7 @@ if __name__ == "__main__":
 
     plt.imshow(spectrogram_data[0][0])  # Visualize the spectrogram of the first batch and first channel
     plt.colorbar()
-    plt.title('Spectrogram (contourf=True) - Channel 1')
+    plt.title(f'Spectrogram (contourf=False) - Channel 1')
     plt.show()
 
     import sys
