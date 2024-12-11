@@ -192,7 +192,13 @@ def validation_with_tqdm(model, test_loader, loss_fn, device='cpu', is_binary=Tr
 
             inputs = inputs.to(device)
             targets = targets.to(device)
-            targets = targets.float()
+
+            # remove nan data 
+            inputs = torch.stack([data for data in inputs if ~torch.isnan(data).any()])
+            targets = torch.stack([targets[i] for (i,data) in enumerate(inputs) if ~torch.isnan(data).any()])
+
+            if is_binary:
+                targets = targets.float()
 
             outputs = model(inputs)
             loss = loss_fn(outputs.squeeze(), targets)
