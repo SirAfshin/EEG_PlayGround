@@ -119,7 +119,7 @@ if __name__ == "__main__":
 
     # ****************** Choose your Model ******************************
     # model = Two_Layer_CNN()
-    # model = Two_Layer_CNN_Pro() ####################w 74.5
+    model = Two_Layer_CNN_Pro() ####################w 74.5
     # model = Simplified_CNN()
     # model = LSTM(128,64,2,1) # IT should be L*F
     # model = LSTM(14,256,4,1) # Should take 14 input features not 128 of the length  ##############w 
@@ -128,7 +128,7 @@ if __name__ == "__main__":
     # model = YOLO9_Backbone_Classifier()
     # model = EEGNet_Normal_data()
     # model = TSCEPTIONModel() #### validation is Ok almost
-    model = VanillaTransformer_time()
+    # model = VanillaTransformer_time() ########## GOOD ON THE NEW OVERLAP DATA till 97 96
 
     print(f"Selected model name : {model.__class__.__name__}")
     # print(f"Model parameter count: {get_num_params(model,1)}")

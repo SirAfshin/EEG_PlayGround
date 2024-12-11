@@ -100,6 +100,9 @@ def create_save_directory(dataset_name, model_name, emotion_dim):
     # Define log file path
     log_path = os.path.join('saves', 'models', dataset_name, model_name, 'logs')
     os.makedirs(log_path, exist_ok=True)
+    # Define log file path  for specific emotion dimension
+    log_emotion_path = os.path.join('saves', 'models', dataset_name, model_name, 'logs', emotion_dim)
+    os.makedirs(log_emotion_path, exist_ok=True)
 
     # timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")  # Get the current time
     save_path = os.path.join('saves', 'models', dataset_name, model_name, emotion_dim, str(run_num))
@@ -274,11 +277,12 @@ def train_validate_and_save(model, dataset_name, model_name, emotion_dim, train_
 
     return loss_hist, acc_hist , loss_val_hist , acc_val_hist
 
-
+# TODO: add report for best accuracy for train and val
+# TODO: save best model when the acc of val is better than before as well
 def train_validate_test_and_save(model, dataset_name, model_name, emotion_dim, train_loader, val_loader, test_loader, optimizer, loss_fn, device, num_epochs=30, is_binary= True):
     # Create the directory to save data
     save_path, log_path, run_num = create_save_directory(dataset_name, model_name, emotion_dim)
-    log_handle = get_logger(os.path.join(log_path, f"report_{run_num}_{dataset_name}_{model_name}_{emotion_dim}.txt"))
+    log_handle = get_logger(os.path.join(log_path, emotion_dim, f"report_{run_num}_{dataset_name}_{model_name}_{emotion_dim}.txt"))
     
 
     # Log Model and Trainer Info
@@ -332,7 +336,7 @@ def train_validate_test_and_save(model, dataset_name, model_name, emotion_dim, t
     save_training_plots(loss_hist, acc_hist, save_path)
     save_training_plots(loss_val_hist, acc_val_hist, save_path,file_name_prefix="validation")
     
-    
+    log_handle.info(f"[BEST ACC] Train: {max(acc_hist)} , Validation: {max(acc_val_hist)}")
     log_handle.info(f"Model Parameter Count: {get_num_params(model,1)} ")
     
     print("Training complete and data saved!")
