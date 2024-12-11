@@ -106,14 +106,14 @@ class EarlyStopping:
         return self.early_stop
 
 
-def train_one_step_tqdm(model, train_loader, loss_fn, optimizer, device, epoch=None, is_binary=True):
+def train_one_step_tqdm(model, train_loader, loss_fn, optimizer, device, epoch=None, is_binary=True ,num_classes=None):
     model.train()
     loss_train = AverageMeter()
 
     if is_binary:
         acc_train = BinaryAccuracy().to(device)
     else:
-        acc_train = Accuracy().to(device)
+        acc_train = Accuracy(task='multiclass', num_classes= num_classes).to(device)
     
     with tqdm(train_loader, unit='batch') as tepoch:
         for inputs, targets in tepoch:
@@ -121,14 +121,22 @@ def train_one_step_tqdm(model, train_loader, loss_fn, optimizer, device, epoch=N
                 tepoch.set_description(f"Epoch: {epoch}")
             inputs = inputs.to(device)
             targets = targets.to(device)
-            targets = targets.float()
+
+            # remove nan data 
+            inputs = torch.stack([data for data in inputs if ~torch.isnan(data).any()])
+            targets = torch.stack([targets[i] for (i,data) in enumerate(inputs) if ~torch.isnan(data).any()])
+
+            if is_binary:
+                targets = targets.float()
             
-            outputs = model(inputs)
-            loss = loss_fn(outputs.squeeze(), targets)
+            outputs = model(inputs) + 1e-8  
+            loss = loss_fn(outputs.squeeze(), targets) + 1e-8  
 
             loss.backward()
+            
             # Weight Clipping
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=0.5) ## 0.5 NEW ADDITION
+
             optimizer.step()
             optimizer.zero_grad()
 
@@ -153,7 +161,13 @@ def validation(model, test_loader, loss_fn, device='cpu', is_binary=True, num_cl
         for i, (inputs, targets) in enumerate(test_loader):
             inputs = inputs.to(device)
             targets = targets.to(device)
-            targets = targets.float()
+            
+            # remove nan data 
+            inputs = torch.stack([data for data in inputs if ~torch.isnan(data).any()])
+            targets = torch.stack([targets[i] for (i,data) in enumerate(inputs) if ~torch.isnan(data).any()])
+
+            if is_binary:
+                targets = targets.float()
 
             outputs = model(inputs)
             loss = loss_fn(outputs.squeeze(), targets)
