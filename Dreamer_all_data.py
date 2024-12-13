@@ -41,29 +41,20 @@ from models.eegnet import EEGNet_Normal_data
 from models.Transformer import VanillaTransformer_time
 
 
-_DataSets = ['Dreamer_time_series_01',
-             'Dreamer_Freq_01',
-             'Dreamer_Freq_Bandfeatures_01',
-             'Dreamer_STFT_Spectrogram',
-             'Dreamer_STFT_Spectrogram_02',
-             'Dreamer_STFT_Spectrogram_17x17',
-             'Dreamer_time_series_overlap',
-             'Dreamer_time_series_overlap_baselineremoval_noSTD',
-             'Dreamer_time_series_overlap_nobaselineremoval'
-             ]
-
 if __name__ == "__main__":
     rng_num =  2024 #122
     batch_size = 256
 
-    dataset_name = 'Dreamer_time_series_onb'# Overlap_NoBaselineRemoval
+    dataset_name1 = 'Dreamer_all_data_nb'# NoBaselineRemoval
+    dataset_name2 = 'Dreamer_all_data_b'# BaselineRemoval
     emotion_dim = 'valence'  # valence, dominance, or arousal
     
     mat_path = './raw_data/DREAMER.mat'  # path to the DREAMER.mat file
-    io_path = f'./saves/datasets/{dataset_name}'  # IO path to store the dataset
+    io_path1 = f'./saves/datasets/{dataset_name1}'  # IO path to store the dataset
+    io_path2 = f'./saves/datasets/{dataset_name2}'  # IO path to store the dataset
 
     # Import data
-    dataset = DREAMERDataset(io_path=f"{io_path}",
+    dataset_noremove_baseline = DREAMERDataset(io_path=f"{io_path1}",
                             mat_path=mat_path,
                             offline_transform=transforms.Compose([
                                 # normalize along the second dimension (temproal dimension)
@@ -77,21 +68,27 @@ if __name__ == "__main__":
                                 transforms.Select(emotion_dim),
                                 transforms.Binary(threshold=2.5),   
                             ]),
-                            chunk_size=128, # -1 would be all the data of each trial for a chunk
-                            overlap = 64, # Half of each data overlaps with the next one
+                            chunk_size=-1, # -1 would be all the data of each trial for a chunk
+                            overlap = 0, # Half of each data overlaps with the next one
                             io_mode = "lmdb",
                             baseline_chunk_size=128,
                             num_baseline=61,
                             num_worker=4)
 
 
-    # print(dataset)
-    # print(dataset[0])
-    # print(dataset[0][0].shape)
-    # print(dataset[0][1])
 
-    # sys.exit()
+    print(dataset_noremove_baseline)
+    print(dataset_noremove_baseline[0])
+    print(dataset_noremove_baseline[0][0].shape)
+    print(dataset_noremove_baseline[0][1])
 
+    import matplotlib.pyplot as plt
+    plt.plot(dataset_noremove_baseline[3][0][2])
+    plt.show()
+
+    sys.exit()
+
+############## TODO: CHANGE accordingly
 
     # Split train val test 
     train_dataset, test_dataset = train_test_split_groupby_trial(dataset= dataset, test_size = 0.2, shuffle= True, random_state= rng_num)
@@ -119,7 +116,7 @@ if __name__ == "__main__":
 
     # ****************** Choose your Model ******************************
     # model = Two_Layer_CNN()
-    # model = Two_Layer_CNN_Pro() ####################w 74.5
+    model = Two_Layer_CNN_Pro() ####################w 74.5
     # model = Simplified_CNN()
     # model = LSTM(128,64,2,1) # IT should be L*F
     # model = LSTM(14,256,4,1) # Should take 14 input features not 128 of the length  ##############w 
@@ -128,7 +125,7 @@ if __name__ == "__main__":
     # model = YOLO9_Backbone_Classifier()
     # model = EEGNet_Normal_data()
     # model = TSCEPTIONModel() #### validation is Ok almost
-    model = VanillaTransformer_time() ########## GOOD ON THE NEW OVERLAP DATA till 97 96
+    # model = VanillaTransformer_time() ########## GOOD ON THE NEW OVERLAP DATA till 97 96
 
     print(f"Selected model name : {model.__class__.__name__}")
     # print(f"Model parameter count: {get_num_params(model,1)}")
@@ -148,7 +145,7 @@ if __name__ == "__main__":
     print(f"Using device: {device}")
     
     num_epochs = 50 # 300 500 600
-    model_name = model.__class__.__name__ + "_onb" 
+    model_name = model.__class__.__name__ + "_nobjj" 
 
     print(f"Start training for {num_epochs} epoch")
 

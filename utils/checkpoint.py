@@ -97,18 +97,20 @@ def create_save_directory(dataset_name, model_name, emotion_dim):
     # Get the current run number
     run_num = run_numbers[emotion_dim][model_name]
    
-    # Define log file path
-    log_path = os.path.join('saves', 'models', dataset_name, model_name, 'logs')
-    os.makedirs(log_path, exist_ok=True)
+    # # Define log file path
+    # log_path = os.path.join('saves', 'models', dataset_name, model_name, 'logs')
+    # os.makedirs(log_path, exist_ok=True)
     # Define log file path  for specific emotion dimension
     log_emotion_path = os.path.join('saves', 'models', dataset_name, model_name, 'logs', emotion_dim)
-    os.makedirs(log_emotion_path, exist_ok=True)
+    if not os.path.exists(log_emotion_path):
+        os.makedirs(log_emotion_path)
 
     # timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")  # Get the current time
     save_path = os.path.join('saves', 'models', dataset_name, model_name, emotion_dim, str(run_num))
     os.makedirs(save_path, exist_ok=True)
 
-    return save_path, log_path, run_num
+    # return save_path, log_path, run_num
+    return save_path, log_emotion_path, run_num
 
 
 def save_model_checkpoint(model, optimizer, epoch, loss, acc, save_path, file_name="model_checkpoint.pth"):
@@ -282,7 +284,8 @@ def train_validate_and_save(model, dataset_name, model_name, emotion_dim, train_
 def train_validate_test_and_save(model, dataset_name, model_name, emotion_dim, train_loader, val_loader, test_loader, optimizer, loss_fn, device, num_epochs=30, is_binary= True):
     # Create the directory to save data
     save_path, log_path, run_num = create_save_directory(dataset_name, model_name, emotion_dim)
-    log_handle = get_logger(os.path.join(log_path, emotion_dim, f"report_{run_num}_{dataset_name}_{model_name}_{emotion_dim}.txt"))
+    print(log_path)
+    log_handle = get_logger(os.path.join(log_path, f"report_{run_num}_{dataset_name}_{model_name}_{emotion_dim}.txt"))
     
 
     # Log Model and Trainer Info

@@ -56,7 +56,7 @@ if __name__ == "__main__":
     rng_num =  2024 #122
     batch_size = 256
 
-    dataset_name = 'Dreamer_time_series_onb'# Overlap_NoBaselineRemoval
+    dataset_name = 'Dreamer_time_series_nob'# Overlap_NoBaselineRemoval
     emotion_dim = 'valence'  # valence, dominance, or arousal
     
     mat_path = './raw_data/DREAMER.mat'  # path to the DREAMER.mat file
@@ -70,7 +70,7 @@ if __name__ == "__main__":
                                 transforms.MeanStdNormalize(axis=1, apply_to_baseline=True),# MeanStdNormalize() , MinMaxNormalize()
                             ]),
                             online_transform=transforms.Compose([
-                                # transforms.BaselineRemoval(),
+                                transforms.BaselineRemoval(),
                                 transforms.ToTensor(),
                             ]),
                             label_transform=transforms.Compose([
@@ -78,7 +78,7 @@ if __name__ == "__main__":
                                 transforms.Binary(threshold=2.5),   
                             ]),
                             chunk_size=128, # -1 would be all the data of each trial for a chunk
-                            overlap = 64, # Half of each data overlaps with the next one
+                            overlap = 0, # Half of each data overlaps with the next one
                             io_mode = "lmdb",
                             baseline_chunk_size=128,
                             num_baseline=61,
@@ -119,7 +119,7 @@ if __name__ == "__main__":
 
     # ****************** Choose your Model ******************************
     # model = Two_Layer_CNN()
-    # model = Two_Layer_CNN_Pro() ####################w 74.5
+    model = Two_Layer_CNN_Pro() ####################w 74.5
     # model = Simplified_CNN()
     # model = LSTM(128,64,2,1) # IT should be L*F
     # model = LSTM(14,256,4,1) # Should take 14 input features not 128 of the length  ##############w 
@@ -128,7 +128,7 @@ if __name__ == "__main__":
     # model = YOLO9_Backbone_Classifier()
     # model = EEGNet_Normal_data()
     # model = TSCEPTIONModel() #### validation is Ok almost
-    model = VanillaTransformer_time() ########## GOOD ON THE NEW OVERLAP DATA till 97 96
+    # model = VanillaTransformer_time() ########## GOOD ON THE NEW OVERLAP DATA till 97 96
 
     print(f"Selected model name : {model.__class__.__name__}")
     # print(f"Model parameter count: {get_num_params(model,1)}")
@@ -148,7 +148,7 @@ if __name__ == "__main__":
     print(f"Using device: {device}")
     
     num_epochs = 50 # 300 500 600
-    model_name = model.__class__.__name__ + "_onb" 
+    model_name = model.__class__.__name__ + "_nob" 
 
     print(f"Start training for {num_epochs} epoch")
 
