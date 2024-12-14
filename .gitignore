@@ -169,6 +169,7 @@ cython_debug/
 *_nov.*
 
 # Dataset files
+raw_data/DEAP
 DREAMER.mat
 *.csv
 *.mdb
