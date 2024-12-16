@@ -7,6 +7,7 @@ class LSTM_CNN_Model(nn.Module):
         
         self.dropout = nn.Dropout(dropout_prob)
         self.af = nn.ReLU()
+        self.num_classes = num_classes
         
         # CNN
         self.conv1 = nn.Conv1d(in_channels= in_channel, out_channels=hidden_size1 , kernel_size= 3 ,padding=1)
@@ -47,7 +48,9 @@ class LSTM_CNN_Model(nn.Module):
 
         # x = self.fc(out[:, -1, :])
         x = self.fc(out.flatten(1))
-        x = nn.functional.sigmoid(x)
+
+        if self.num_classes == 1: # else we should use softmax
+            x = nn.functional.sigmoid(x)
 
         return x
 

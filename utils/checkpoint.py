@@ -9,6 +9,8 @@ import time
 import json
 import torch
 import matplotlib.pyplot as plt
+import torch.optim as optim
+
 from utils.utils import get_num_params, train_one_step_tqdm , validation_with_tqdm
 from utils.log import get_logger
 
@@ -352,13 +354,14 @@ def train_validate_test_lrschedule_and_save_(model, dataset_name, model_name, em
     log_handle = get_logger(os.path.join(log_path, f"report_{run_num}_{dataset_name}_{model_name}_{emotion_dim}.txt"))
     
     # Initialize the learning rate scheduler (ReduceLROnPlateau)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=5, factor=0.5, verbose=True)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=10, factor=0.6, verbose=True)
     # early_stopping = EarlyStopping(patience=5, delta=0.01)
 
     # Log model and training information
     log_handle.info(f"Using dataset [{dataset_name}] with emotion dim [{emotion_dim}]")
     log_handle.info(f"Training model [{model_name}] with optimizer [{optimizer.__class__.__name__}] and learning rate = {optimizer.param_groups[0]['lr']}")
-    
+    log_handle.info("Train With Scheduler!")
+
     # Lists to store training and validation loss and accuracy
     loss_hist, acc_hist, loss_val_hist, acc_val_hist = [], [], [], []
     best_loss = float('inf')  # Start with an initially high loss
