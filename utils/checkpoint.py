@@ -281,9 +281,9 @@ def train_validate_and_save(model, dataset_name, model_name, emotion_dim, train_
 
     return loss_hist, acc_hist , loss_val_hist , acc_val_hist
 
-# TODO: add report for best accuracy for train and val
+
 # TODO: save best model when the acc of val is better than before as well
-def train_validate_test_and_save(model, dataset_name, model_name, emotion_dim, train_loader, val_loader, test_loader, optimizer, loss_fn, device, num_epochs=30, is_binary= True):
+def train_validate_test_and_save(model, dataset_name, model_name, emotion_dim, train_loader, val_loader, test_loader, optimizer, loss_fn, device, num_epochs=30, is_binary= True, num_classes= None):
     # Create the directory to save data
     save_path, log_path, run_num = create_save_directory(dataset_name, model_name, emotion_dim)
     print(log_path)
@@ -305,13 +305,14 @@ def train_validate_test_and_save(model, dataset_name, model_name, emotion_dim, t
 
     # Initialize the best loss variable to track the least loss
     best_loss = float('inf')  # Set to infinity initially to ensure it gets updated in the first epoch
+    best_acc = -1.0 * float('inf')
 
     log_handle.info("Start Training")
     for epoch in range(num_epochs):
         # Model training (assuming train_one_step_tqdm is implemented)
-        model, loss, acc = train_one_step_tqdm(model, train_loader, loss_fn, optimizer, device, epoch, True)
+        model, loss, acc = train_one_step_tqdm(model, train_loader, loss_fn, optimizer, device, epoch, is_binary=is_binary, num_classes=num_classes)
         # Model validating (using validation loader)
-        loss_val, acc_val = validation_with_tqdm(model,val_loader, loss_fn, device, is_binary)
+        loss_val, acc_val = validation_with_tqdm(model,val_loader, loss_fn, device, is_binary, num_classes)
 
         log_handle.info(f"[Train] Epoch {epoch} - Loss: {loss}, Acc: {acc} ")
         log_handle.info(f"[Valdiation] Epoch {epoch} - Loss_Val: {loss_val}, Acc_Val: {acc_val}")
@@ -325,8 +326,15 @@ def train_validate_test_and_save(model, dataset_name, model_name, emotion_dim, t
         if loss < best_loss:
             best_loss = loss  # Update the best loss
             # save_model_checkpoint(model, optimizer, epoch, loss, acc, save_path, file_name=f"best_model_checkpoint_epoch_{epoch}.pth")
-            save_model_checkpoint(model, optimizer, epoch, loss, acc, save_path, file_name=f"best_model_checkpoint.pth")
+            save_model_checkpoint(model, optimizer, epoch, loss, acc, save_path, file_name=f"best_model_checkpoint_loss.pth")
             print(f"New best model saved with loss {loss:.4f} at epoch {epoch}")
+
+        # Save model if loss has not imporved but accuracy has gotten better
+        if acc_val > best_acc:
+            best_acc = acc_val
+            save_model_checkpoint(model, optimizer, epoch, loss, acc, save_path, file_name=f"best_model_checkpoint_acc.pth")
+            print(f"New best model saved with Acc {acc_val:.4f} at epoch {epoch}")
+
         
         # save acc and loss plot each 50 epochs
         if epoch % 50 == 0  and epoch != 0:
@@ -344,6 +352,8 @@ def train_validate_test_and_save(model, dataset_name, model_name, emotion_dim, t
     log_handle.info(f"[BEST ACC] Train: {max(acc_hist)} , Validation: {max(acc_val_hist)}")
     log_handle.info(f"Model Parameter Count: {get_num_params(model,1)} ")
     
+    print(f"[BEST ACC] Train: {max(acc_hist)} , Validation: {max(acc_val_hist)}")
+    print(f"Model Parameter Count: {get_num_params(model,1)} ")
     print("Training complete and data saved!")
 
     return loss_hist, acc_hist , loss_val_hist , acc_val_hist , loss_test, acc_test
