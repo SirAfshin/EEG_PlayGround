@@ -47,7 +47,7 @@ if __name__ == "__main__":
     batch_size = 256
 
     dataset_name = 'Dreamer_time_series_overlap_o1_nb'# Overlap_NoBaselineRemoval
-    emotion_dim = 'valence'  # valence, dominance, or arousal
+    emotion_dim = 'arousal'  # valence, dominance, or arousal
     
     mat_path = './raw_data/DREAMER.mat'  # path to the DREAMER.mat file
     io_path = f'./saves/datasets/{dataset_name}'  # IO path to store the dataset
@@ -68,7 +68,7 @@ if __name__ == "__main__":
                                 transforms.Binary(threshold=2.5),   
                             ]),
                             chunk_size=128, # -1 would be all the data of each trial for a chunk
-                            overlap = 127, # 128-1=127 -> Stride=1
+                            overlap = 112, # 128-1=127 -> Stride=1
                             io_mode = "lmdb",
                             baseline_chunk_size=128,
                             num_baseline=61,
