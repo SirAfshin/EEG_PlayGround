@@ -130,7 +130,7 @@ if __name__ == "__main__":
     # loss_fn = nn.MSELoss()
     
     # ****************** Choose your Optimizer ******************************
-    optimizer = optim.Adam(model.parameters(), lr=0.001) # lr = 0.0001  0.001
+    optimizer = optim.Adam(model.parameters(), lr=0.00001) # lr = 0.0001  0.001
     # optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.937)
 
 

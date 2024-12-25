@@ -129,20 +129,20 @@ if __name__ == "__main__":
     # loss_fn = nn.MSELoss()
     
     # ****************** Choose your Optimizer ******************************
-    optimizer = optim.Adam(model.parameters(), lr=0.1) # lr = 0.0001  0.001
+    optimizer = optim.Adam(model.parameters(), lr=0.01) # lr = 0.0001  0.001
     # optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.937)
 
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
     
-    num_epochs = 500 # 300 500 600
+    num_epochs = 50 # 300 500 600
     model_name = "DEAP_" + model.__class__.__name__ + "_o32_nb"  # 96 OVERLAP no baseline removal
 
     print(f"Start training for {num_epochs} epoch")
 
     model = model.to(device)
-    loss_hist, acc_hist , loss_val_hist , acc_val_hist, loss_test, acc_test = train_validate_test_lrschedule_and_save_(model, 
+    loss_hist, acc_hist , loss_val_hist , acc_val_hist, loss_test, acc_test = train_validate_test_and_save(model, 
                                                                                     dataset_name, 
                                                                                     model_name, 
                                                                                     emotion_dim, 

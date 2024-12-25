@@ -10,6 +10,57 @@ from torchmetrics import Accuracy
 from torchmetrics.classification import BinaryAccuracy
 from tqdm import tqdm
 import re
+from sklearn.metrics import confusion_matrix, accuracy_score, f1_score
+
+
+
+def ensure_path(path):
+    if os.path.exists(path):
+        pass
+    else:
+        os.makedirs(path)
+
+class Timer():
+    def __init__(self):
+        self.o = time.time()
+
+    def measure(self, p=1):
+        x = (time.time() - self.o) / p
+        x = int(x)
+        if x >= 3600:
+            return '{:.1f}h'.format(x / 3600)
+        if x >= 60:
+            return '{}m'.format(round(x / 60))
+        return '{}s'.format(x)
+
+def get_metrics(y_pred, y_true, classes=None):
+    """
+    This function calculates the accuracy, f1 score and confusion matrix
+    Parameters
+    ----------
+    y_pred: the predicted label
+    y_true: the ground truth label
+    classes: the class labels
+    return: the accuracy, f1 score and confusion matrix
+    """
+    acc = accuracy_score(y_true, y_pred)
+    f1 = f1_score(y_true, y_pred)
+    if classes is not None:
+        cm = confusion_matrix(y_true, y_pred, labels=classes)
+    else:
+        cm = confusion_matrix(y_true, y_pred)
+    return acc, f1, cm
+
+def L1Loss(model, Lambda):
+    w = torch.cat([x.view(-1) for x in model.parameters()])
+    err = Lambda * torch.sum(torch.abs(w))
+    return err
+
+
+def L2Loss(model, Lambda):
+    w = torch.cat([x.view(-1) for x in model.parameters()])
+    err = Lambda * torch.sum(w.pow(2))
+    return err
 
 def print_var(name, value):
     print(f"{name} : {value}")
