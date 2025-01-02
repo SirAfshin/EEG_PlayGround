@@ -16,7 +16,7 @@ from torcheeg import transforms
 from torch.utils.data import DataLoader
 from torcheeg.datasets.constants import DREAMER_CHANNEL_LOCATION_DICT
 from torcheeg.datasets.constants import DREAMER_ADJACENCY_MATRIX
-from torcheeg.datasets import DREAMERDataset
+from torcheeg.datasets import DREAMERDataset, DEAPDataset
 from torcheeg.model_selection import KFoldGroupbyTrial
 from torcheeg.model_selection import train_test_split_groupby_trial
 
@@ -27,7 +27,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # Local Imports
-from utils.checkpoint import train_and_save,  train_validate_and_save, train_validate_test_and_save
+from utils.checkpoint import train_and_save,  train_validate_and_save, train_validate_test_and_save, tvt_save_acc_loss_f1
 from utils.log import get_logger
 from utils.utils import print_var, train_one_epoch, train_one_epoch_lstm, get_num_params, train_one_step_tqdm
 from utils.transforms import STFTSpectrogram
@@ -39,6 +39,8 @@ from models.Tsception import TSCEPTIONModel
 from models.YoloV9 import YOLO9_Backbone_Classifier
 from models.eegnet import EEGNet_Normal_data
 from models.Transformer import VanillaTransformer_time
+from models.tcn_based import EEGTCNet , TCNet_Fusion
+
 
 ''' << Pre-Processing Steps >>
 1.1- Band Pass filter 0.3Hz - 50Hz
@@ -79,16 +81,9 @@ F1 = (2xTP)/(2xTP + FP + FN)
 '''
 
 
-if __name__ == "__main__":
-    batch_size = 256
-
-    dataset_name = 'Dreamer_LibEER'# Overlap_NoBaselineRemoval
-    emotion_dim = 'valence'  # valence, dominance, or arousal
-    
-    mat_path = './raw_data/DREAMER.mat'  # path to the DREAMER.mat file
-    io_path = f'./saves/datasets/{dataset_name}'  # IO path to store the dataset
-
-    # Import data
+# TODO: add the preprocessing methods needed!
+def get_dreamer(dataset_name= 'Dreamer_LibEER_mem', emotion_dim= 'valence', mat_path= './raw_data/DREAMER.mat',io_mode='memory'):#io_mode = 'lmdb'
+    io_path = f'./saves/datasets/{dataset_name}'  # IO path to store the dataset 
     dataset = DREAMERDataset(io_path=f"{io_path}",
                             mat_path=mat_path,
                             offline_transform=transforms.Compose([
@@ -105,20 +100,80 @@ if __name__ == "__main__":
                             ]),
                             chunk_size=128, # -1 would be all the data of each trial for a chunk
                             overlap = 0, 
-                            io_mode = "lmdb",
+                            io_mode = io_mode,
                             baseline_chunk_size=128,
                             num_baseline=61,
                             num_worker=4)
+    return dataset
+
+def get_deap(dataset_name= 'DEAP_LibEER_mem', emotion_dim= 'valence', root_path = './raw_data/DEAP',io_mode='memory'):#io_mode = 'lmdb'
+    io_path = f'./saves/datasets/{dataset_name}'  # IO path to store the dataset
+    dataset = DEAPDataset(  root_path=root_path,
+                            io_path=io_path,
+                            offline_transform=transforms.Compose([
+                                transforms.MeanStdNormalize(axis=1, apply_to_baseline=True),# MeanStdNormalize() , MinMaxNormalize()
+                                
+                            ]),
+                            online_transform=transforms.Compose([
+                                transforms.To2d(),
+                                transforms.ToTensor(),
+                                ]),
+                            label_transform=transforms.Compose([
+                                transforms.Select(emotion_dim),
+                                transforms.Binary(5.0),
+                            ]),
+                            overlap = 0, # 
+                            io_mode=io_mode,
+                            num_worker=4,)
+    return dataset
 
 
-    print(dataset)
-    print(dataset[0])
-    print(dataset[0][0].shape)
-    print(dataset[0][1])
+if __name__ == "__main__":
 
-    sys.exit()
+    dataset_name = ''
+    emotion_dim = ''
+    DATA_SET = 'DEAP' # 'DREAMER' , 'DEAP' , 'DEAP_o32'
+
+    if DATA_SET == 'DREAMER':
+        dataset = get_dreamer(dataset_name= 'Dreamer_LibEER_mem',io_mode='mem')
+    elif DATA_SET == 'DEAP':
+        dataset_name = 'DEAP_time_01_no' #'DEAP_LibEER_mem'
+        emotion_dim = 'valence'
+        dataset = get_deap(dataset_name= dataset_name,emotion_dim=emotion_dim ,io_mode='lmdb')
+    elif DATA_SET == "DEAP_o32":
+        emotion_dim = 'valence'  # valence, dominance, or arousal
+        dataset_name = 'DEAP_time_o32_nb' # Time data which is stored in memory
+        root_path = './raw_data/DEAP'
+        io_path = f'./saves/datasets/{dataset_name}'  # IO path to store the dataset
+        dataset = DEAPDataset( root_path=root_path,
+                                io_path=io_path,
+                                offline_transform=transforms.Compose([
+                                    transforms.MeanStdNormalize(axis=1, apply_to_baseline=True),# MeanStdNormalize() , MinMaxNormalize()
+                                ]),
+                                online_transform=transforms.Compose([
+                                    transforms.To2d(),
+                                    transforms.ToTensor(),
+                                    ]),
+                                label_transform=transforms.Compose([
+                                    transforms.Select(emotion_dim),
+                                    transforms.Binary(5.0),
+                                ]),
+                                overlap = 96, # 128 - 32
+                                io_mode='lmdb',
+                                num_worker=4,
+                            )
 
 
+
+
+    # print(dataset)
+    # print(dataset[0])
+    # print(dataset[0][0].shape)
+    # print(dataset[0][1])
+
+    # sys.exit()
+
+    batch_size = 256
     # Split train val test ????????????
     train_dataset, test_dataset = train_test_split_groupby_trial(dataset= dataset, test_size = 0.2, shuffle= True)
     train_dataset, val_dataset = train_test_split_groupby_trial(dataset= train_dataset, test_size = 0.2, shuffle=True)
@@ -145,6 +200,9 @@ if __name__ == "__main__":
 
     # ****************** Choose your Model ******************************
     # model = Two_Layer_CNN()
+    # model = EEGTCNet(n_classes=2)
+    model = TCNet_Fusion(input_size= dataset[0][0].shape, n_classes= 2, channels= 32, sampling_rate= 128)
+
 
 
     print(f"Selected model name : {model.__class__.__name__}")
@@ -158,32 +216,36 @@ if __name__ == "__main__":
     # loss_fn = nn.MSELoss()
     
     # ****************** Choose your Optimizer ******************************
-    optimizer = optim.Adam(model.parameters(), lr=0.001) # lr = 0.0001  0.001
+    # optimizer = optim.Adam(model.parameters(), lr=0.001) # lr = 0.0001  0.001
+    optimizer = optim.Adam(model.parameters(), lr=0.01) # lr = 0.0001  0.001
     # optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.937)
 
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
     
-    num_epochs = 50 # 300 500 600
-    model_name = "DREAMER_" + model.__class__.__name__ + "_LibEER" 
+    num_epochs = 150 # 300 500 600
+    model_name = DATA_SET + '_' + model.__class__.__name__ + "_LibEER" 
 
     print(f"Start training for {num_epochs} epoch")
 
     model = model.to(device)
-    loss_hist, acc_hist , loss_val_hist , acc_val_hist, loss_test, acc_test = train_validate_test_and_save(model, 
-                                                                                    dataset_name, 
-                                                                                    model_name, 
-                                                                                    emotion_dim, 
-                                                                                    train_loader, 
-                                                                                    val_loader,
-                                                                                    test_loader,  
-                                                                                    optimizer, 
-                                                                                    loss_fn, 
-                                                                                    device, 
-                                                                                    num_epochs=num_epochs,
-                                                                                    is_binary= False,
-                                                                                    num_classes= 2)
+    
+    loss_hist, acc_hist , loss_val_hist , \
+    acc_val_hist, loss_test, acc_test ,\
+    (f1_hist, f1_val_hist, f1_test) = tvt_save_acc_loss_f1(model, 
+                                                            dataset_name, 
+                                                            model_name, 
+                                                            emotion_dim, 
+                                                            train_loader, 
+                                                            val_loader,
+                                                            test_loader,  
+                                                            optimizer, 
+                                                            loss_fn, 
+                                                            device, 
+                                                            num_epochs=num_epochs,
+                                                            is_binary= False,
+                                                            num_classes= 2)
 
 
     print("Training process is done!")
