@@ -10,8 +10,10 @@ import json
 import torch
 import matplotlib.pyplot as plt
 import torch.optim as optim
+from sklearn.metrics import  f1_score
 
 from utils.utils import get_num_params, train_one_step_tqdm , validation_with_tqdm
+from utils.utils import train_one_step_tqdm_withF1, validation_with_tqdm_withF1
 from utils.log import get_logger
 
 def load_model(model_path, model_class, optimizer=None, **kwargs):
@@ -56,7 +58,7 @@ def load_model(model_path, model_class, optimizer=None, **kwargs):
 
 
 
-def create_save_directory(dataset_name, model_name, emotion_dim):
+def create_save_directory(dataset_name, model_name, emotion_dim, pre_path= '.'):
     """
     Create the directory structure for saving the model and other information.
     
@@ -70,7 +72,7 @@ def create_save_directory(dataset_name, model_name, emotion_dim):
     """
 
     # run_file = f'./run_numbers.json'
-    run_file = os.path.join('saves', 'models','run_numbers.json')
+    run_file = os.path.join(pre_path, 'saves', 'models','run_numbers.json')
    
     # Load or initialize run numbers
     if os.path.exists(run_file):
@@ -103,12 +105,12 @@ def create_save_directory(dataset_name, model_name, emotion_dim):
     # log_path = os.path.join('saves', 'models', dataset_name, model_name, 'logs')
     # os.makedirs(log_path, exist_ok=True)
     # Define log file path  for specific emotion dimension
-    log_emotion_path = os.path.join('saves', 'models', dataset_name, model_name, 'logs', emotion_dim)
+    log_emotion_path = os.path.join(pre_path, 'saves', 'models', dataset_name, model_name, 'logs', emotion_dim)
     if not os.path.exists(log_emotion_path):
         os.makedirs(log_emotion_path)
 
     # timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")  # Get the current time
-    save_path = os.path.join('saves', 'models', dataset_name, model_name, emotion_dim, str(run_num))
+    save_path = os.path.join(pre_path, 'saves', 'models', dataset_name, model_name, emotion_dim, str(run_num))
     os.makedirs(save_path, exist_ok=True)
 
     # return save_path, log_path, run_num
@@ -282,7 +284,6 @@ def train_validate_and_save(model, dataset_name, model_name, emotion_dim, train_
     return loss_hist, acc_hist , loss_val_hist , acc_val_hist
 
 
-# TODO: save best model when the acc of val is better than before as well
 def train_validate_test_and_save(model, dataset_name, model_name, emotion_dim, train_loader, val_loader, test_loader, optimizer, loss_fn, device, num_epochs=30, is_binary= True, num_classes= None):
     # Create the directory to save data
     save_path, log_path, run_num = create_save_directory(dataset_name, model_name, emotion_dim)
@@ -427,6 +428,93 @@ def train_validate_test_lrschedule_and_save_(model, dataset_name, model_name, em
 
 
 
+# tvt = train validate test
+def tvt_save_acc_loss_f1(model, dataset_name, model_name, emotion_dim, train_loader, val_loader, test_loader, optimizer, loss_fn, device, num_epochs=30, is_binary= True, num_classes= None, pre_path='.'):
+    # Create the directory to save data
+    save_path, log_path, run_num = create_save_directory(dataset_name, model_name, emotion_dim,pre_path)
+    print(log_path)
+    log_handle = get_logger(os.path.join(log_path, f"report_{run_num}_{dataset_name}_{model_name}_{emotion_dim}.txt"))
+    
+
+    # Log Model and Trainer Info
+    log_handle.info("Using train and validate save function!")
+    log_handle.info(f"Using data set [{dataset_name}] with emotion demention [{emotion_dim}]")
+    log_handle.info(f"Training model [{model_name}]")
+    log_handle.info(f"Using Optimizer [{optimizer.__class__.__name__}] with learning rate = {optimizer.param_groups[0]['lr']}")
+    log_handle.info(f"Using Loss Function [{loss_fn.__class__.__name__}]")
+
+    # Lists to store loss and accuracy values
+    loss_hist = []
+    acc_hist = []
+    loss_val_hist = []
+    acc_val_hist = []
+    f1_hist = []
+    f1_val_hist = []
+
+    # Initialize the best loss variable to track the least loss
+    best_loss = float('inf')  # Set to infinity initially to ensure it gets updated in the first epoch
+    best_acc = -1.0 * float('inf')
+
+    log_handle.info("Start Training")
+    for epoch in range(num_epochs):
+        # Model training (assuming train_one_step_tqdm is implemented)
+        model, loss, acc, f1 = train_one_step_tqdm_withF1(model, train_loader, loss_fn, optimizer, device, epoch, is_binary=is_binary, num_classes=num_classes)
+        # Model validating (using validation loader)
+        loss_val, acc_val, f1_val = validation_with_tqdm_withF1(model,val_loader, loss_fn, device, is_binary, num_classes)
+
+        log_handle.info(f"[Train] Epoch {epoch} - Loss: {loss}, Acc: {acc}, F1: {f1} ")
+        log_handle.info(f"[Valdiation] Epoch {epoch} - Loss_Val: {loss_val}, Acc_Val: {acc_val}, F1_Val: {f1_val}")
+
+        loss_hist.append(loss)
+        acc_hist.append(acc)
+        loss_val_hist.append(loss_val)
+        acc_val_hist.append(acc_val)
+        f1_hist.append(f1)
+        f1_val_hist.append(f1_val)
+        
+        # Save the model checkpoint only if the current loss is better (lower) than the best loss
+        if loss < best_loss:
+            best_loss = loss  # Update the best loss
+            # save_model_checkpoint(model, optimizer, epoch, loss, acc, save_path, file_name=f"best_model_checkpoint_epoch_{epoch}.pth")
+            save_model_checkpoint(model, optimizer, epoch, loss, acc, save_path, file_name=f"best_model_checkpoint_loss.pth")
+            print(f"New best model saved with loss {loss:.4f} at epoch {epoch}")
+
+        # Save model if loss has not imporved but accuracy has gotten better
+        if acc_val > best_acc:
+            best_acc = acc_val
+            save_model_checkpoint(model, optimizer, epoch, loss, acc, save_path, file_name=f"best_model_checkpoint_acc.pth")
+            print(f"New best model saved with Acc {acc_val:.4f} at epoch {epoch}")
+
+        
+        # save acc and loss plot each 50 epochs
+        if epoch % 10 == 0  and epoch != 0:
+            save_training_plots(loss_hist, acc_hist, save_path)
+            save_training_plots(loss_val_hist, acc_val_hist, save_path,file_name_prefix="validation")
+            save_training_plots(f1_hist, f1_val_hist, save_path,file_name_prefix="F1_Only")
+
+    # Test model performance on test data
+    loss_test, acc_test, f1_test = validation_with_tqdm_withF1(model,test_loader, loss_fn, device, is_binary, num_classes)
+    log_handle.info(f"[Test] Loss: {loss_test} , Accuracy: {acc_test}, F1-Score: {f1_test}")
+
+    # Save the training plots
+    save_training_plots(loss_hist, acc_hist, save_path)
+    save_training_plots(loss_val_hist, acc_val_hist, save_path,file_name_prefix="validation")
+    save_training_plots(f1_hist, f1_val_hist, save_path,file_name_prefix="F1_Only")
+    
+    log_handle.info(f"[BEST ACC] Train: {max(acc_hist)} , Validation: {max(acc_val_hist)} , Test: {acc_test} ")
+    log_handle.info(f"[BEST Loss] Train: {min(loss_hist)} , Validation: {min(loss_val_hist)} , Test: {loss_test} ")
+    log_handle.info(f"[BEST F1] Train: {max(f1_hist)} , Validation: {max(f1_val_hist)} , Test: {f1_test} ")
+    
+    log_handle.info(f"Model Parameter Count: {get_num_params(model,1)} ")
+    log_handle.info("DONE!")
+
+    print(f"[BEST ACC] Train: {max(acc_hist)} , Validation: {max(acc_val_hist)} , Test: {acc_test} ")
+    print(f"[BEST Loss] Train: {min(loss_hist)} , Validation: {min(loss_val_hist)} , Test: {loss_test} ")
+    print(f"[BEST F1] Train: {max(f1_hist)} , Validation: {max(f1_val_hist)} , Test: {f1_test} ")
+    print(f"Model Parameter Count: {get_num_params(model,1)} ")
+    print("Training complete and data saved!")
+
+    return loss_hist, acc_hist , loss_val_hist , acc_val_hist , loss_test, acc_test , (f1_hist, f1_val_hist, f1_test)
 
 
 if __name__ == "__main__":
