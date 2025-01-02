@@ -182,6 +182,7 @@ saves/datasets/Dreamer_time_series_01/*/eeg/data.mdb
 # Ignore all info.csv files in any _record folder
 saves/datasets/*/*/info.csv
 saves/datasets/Dreamer_time_series_01/*/info.csv
+saves/pics
 
 # Ignore saved model files
 saves/models/*
@@ -189,3 +190,4 @@ saves/models/*
 # Ignore notebooks
 notebooks/*
 notebooks/test_model.ipynb
+
