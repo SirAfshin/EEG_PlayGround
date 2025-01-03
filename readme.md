@@ -7,6 +7,13 @@ This repositry contains codes and datasets for eeg emotion detection.
 - https://medium.com/@tczhangzhi/torcheeg-a-pytorch-lib-for-deep-eeg-analysis-a25ca12175e8
 - https://satvikagnihotri12.medium.com/mental-emotional-sentiment-classification-using-machine-learning-and-an-electroencephalogram-eeg-3decf72339da
 - https://arxiv.org/pdf/2401.18006v2
+- https://github.com/hazdzz/ChebyNet/tree/main/model
+-
+-
+-
+-
+-
+
 
 
 # Test title
