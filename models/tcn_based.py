@@ -69,6 +69,7 @@ class _TCNBlock(nn.Module):
         self.final_nonlinearity = nonlinearity_dict[activation]
 
     def forward(self, x):
+        # print(f"TCNBLOCK input: {x.shape}")
         residual = self.project_channels(x)
         out = self.conv1(x)
         out = self.bn1(out)
@@ -78,6 +79,7 @@ class _TCNBlock(nn.Module):
         out = self.bn2(out)
         out = self.nonlinearity2(out)
         out = self.drop2(out)
+        # print(f"TCNBLOCK output: {self.final_nonlinearity(out + residual).shape}")
         return self.final_nonlinearity(out + residual)
 
 
@@ -257,6 +259,7 @@ class MultiHeadSelfAttention(nn.Module):
         self.layer_norm = nn.LayerNorm(d_model)
 
     def forward(self, x):
+        # print(f"MultiHeadSelfAttention input: {x.shape}")
         batch_size, d, T_w = x.size()
 
         # Permute to (batch_size, T_w, d)
@@ -287,6 +290,7 @@ class MultiHeadSelfAttention(nn.Module):
         # Permute back to (batch_size, d, T_w)
         output = output.permute(0, 2, 1)
 
+        # print(f"MultiHeadSelfAttention Output: {x.shape}")
         return output
 
 
