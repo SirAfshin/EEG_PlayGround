@@ -26,7 +26,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # Local Imports
-from utils.checkpoint import train_and_save,  train_validate_and_save, train_validate_test_and_save
+from utils.checkpoint import train_and_save,  train_validate_and_save, train_validate_test_and_save, tvt_save_acc_loss_f1
 from utils.log import get_logger
 from utils.utils import print_var, train_one_epoch, train_one_epoch_lstm, get_num_params, train_one_step_tqdm
 from models.cnn import Two_Layer_CNN, Two_Layer_CNN_Pro, Simplified_CNN
@@ -36,6 +36,8 @@ from models.Tsception import TSCEPTIONModel
 from models.YoloV9 import YOLO9_Backbone_Classifier
 from models.eegnet import EEGNet_Normal_data
 from models.Transformer import VanillaTransformer_time
+from models.tcn_based import *
+
 
 if __name__ == "__main__":
     rng_num = 122
@@ -69,12 +71,12 @@ if __name__ == "__main__":
                             
 
 
-    print(dataset)
-    print(dataset[0])
-    print(dataset[0][0].shape)
-    print(dataset[0][1])
+    # print(dataset)
+    # print(dataset[0])
+    # print(dataset[0][0].shape)
+    # print(dataset[0][1])
 
-    sys.exit()
+    # sys.exit()
 
 
 
@@ -114,8 +116,20 @@ if __name__ == "__main__":
     # model = YOLO9_Backbone_Classifier()
     # model = EEGNet_Normal_data()
     # model = TSCEPTIONModel() #### validation is Ok almost
-    model = VanillaTransformer_time()
+    # model = VanillaTransformer_time()
 
+    # model = EEGTCNet(n_classes=2)
+    model = TCNet_Fusion(input_size= dataset[0][0].shape, n_classes= 2, channels= dataset[0][0].shape[1], sampling_rate= 128)
+
+    # model = ATCNet(dataset[0][0].shape, dataset[0][0].shape[1] , n_classes=2, n_windows=8,
+    #                    eegn_F1=24, eegn_D=2, eegn_kernelSize=50, eegn_poolSize=1, eegn_dropout=0.3, num_heads=2,
+    #                    tcn_depth=2, tcn_kernelSize=4, tcn_filters=32, tcn_dropout=0.3, fuse='average',activation='elu')
+
+    # model = DGCNN(in_channels= 5,
+    #               num_electrodes= 32,
+    #               num_layers= 2,
+    #               hid_channels= 32,
+    #               num_classes= 2)
 
     print(f"Selected model name : {model.__class__.__name__}")
     # print(f"Model parameter count: {get_num_params(model,1)}")
@@ -123,39 +137,60 @@ if __name__ == "__main__":
     print('*' * 30)
     
     # ****************** Choose your Loss Function ******************************
-    loss_fn = nn.BCEWithLogitsLoss()
+    # loss_fn = nn.BCEWithLogitsLoss()
     # loss_fn = nn.MSELoss()
+    loss_fn = nn.CrossEntropyLoss()
     
     # ****************** Choose your Optimizer ******************************
     optimizer = optim.Adam(model.parameters(), lr=0.001) # lr = 0.0001  0.001
     # optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.937)
 
 
+    # ********************** Set The Device ***************************************
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
     
-    num_epochs = 20 # 300 500 600
-    model_name = model.__class__.__name__
+
+    num_epochs = 600 # 300 500 600
+    model_name = "Dreamer_" + model.__class__.__name__ + "_Time_To2d"
 
     print(f"Start training for {num_epochs} epoch")
 
     # model = model.to(device)
     # train_validate_and_save(model, dataset_name, model_name, emotion_dim, train_loader, val_loader, optimizer, loss_fn, device,num_epochs=num_epochs)
+    
+    # model = model.to(device)
+    # loss_hist, acc_hist , loss_val_hist , acc_val_hist, loss_test, acc_test = train_validate_test_and_save(model, 
+    #                                                                                 dataset_name, 
+    #                                                                                 model_name, 
+    #                                                                                 emotion_dim, 
+    #                                                                                 train_loader, 
+    #                                                                                 val_loader,
+    #                                                                                 test_loader,  
+    #                                                                                 optimizer, 
+    #                                                                                 loss_fn, 
+    #                                                                                 device, 
+    #                                                                                 num_epochs=num_epochs)
+    
     model = model.to(device)
-    loss_hist, acc_hist , loss_val_hist , acc_val_hist, loss_test, acc_test = train_validate_test_and_save(model, 
-                                                                                    dataset_name, 
-                                                                                    model_name, 
-                                                                                    emotion_dim, 
-                                                                                    train_loader, 
-                                                                                    val_loader,
-                                                                                    test_loader,  
-                                                                                    optimizer, 
-                                                                                    loss_fn, 
-                                                                                    device, 
-                                                                                    num_epochs=num_epochs)
-
+    loss_hist, acc_hist , loss_val_hist , \
+    acc_val_hist, loss_test, acc_test ,\
+    (f1_hist, f1_val_hist, f1_test) = tvt_save_acc_loss_f1(model, 
+                                                            dataset_name, 
+                                                            model_name, 
+                                                            emotion_dim, 
+                                                            train_loader, 
+                                                            val_loader,
+                                                            test_loader,  
+                                                            optimizer, 
+                                                            loss_fn, 
+                                                            device, 
+                                                            num_epochs=num_epochs,
+                                                            is_binary= False,
+                                                            num_classes= 2)
 
     
     print("Training process is done!")
+    print(f"Test: LOSS: {loss_test}, ACC: {acc_test}, F1: {f1_test}")
     print(f"Model parameter count: {get_num_params(model,1)}")
 
