@@ -53,8 +53,8 @@ if __name__ == "__main__":
                                 transforms.MeanStdNormalize(axis=1, apply_to_baseline=True),# MeanStdNormalize() , MinMaxNormalize()
                             ]),
                             online_transform=transforms.Compose([
-                                # transforms.BaselineRemoval(),
                                 transforms.To2d(apply_to_baseline=True),
+                                transforms.BaselineRemoval(),
                                 transforms.ToTensor(),
                             ]),
                             label_transform=transforms.Compose([
@@ -82,8 +82,8 @@ if __name__ == "__main__":
 
 
     # Split train val test 
-    train_dataset, test_dataset = train_test_split_groupby_trial(dataset= dataset, test_size = 0.2, shuffle= True, random_state= rng_num)
-    train_dataset, val_dataset = train_test_split_groupby_trial(dataset= train_dataset, test_size = 0.2, shuffle=True, random_state= rng_num)
+    train_dataset, test_dataset = train_test_split_groupby_trial(dataset= dataset, test_size = 0.2, shuffle= True) #, random_state= rng_num)
+    train_dataset, val_dataset = train_test_split_groupby_trial(dataset= train_dataset, test_size = 0.2, shuffle=True) #, random_state= rng_num)
     
 
     # Create train/val/test dataloaders
@@ -152,7 +152,7 @@ if __name__ == "__main__":
     
 
     num_epochs = 600 # 300 500 600
-    model_name = "Dreamer_" + model.__class__.__name__ + "_Time_To2d"
+    model_name = "Dreamer_" + model.__class__.__name__ + "_Time_To2d_b"
 
     print(f"Start training for {num_epochs} epoch")
 
