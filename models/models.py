@@ -371,6 +371,7 @@ class NovModel(nn.Module):
 
 
     def forward(self, x):
+        x = x.squeeze(1)
         for blk in self.tcn_blocks:
             x = blk(x)
         x = self.BN1(x)
