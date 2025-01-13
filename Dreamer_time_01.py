@@ -44,7 +44,7 @@ if __name__ == "__main__":
     rng_num = 122
     batch_size = 256
     dataset_name= 'Dreamer_time_01'
-    emotion_dim= 'valence' #valence arousal dominance
+    emotion_dim= 'dominance' #valence arousal dominance
     io_path = f'./saves/datasets/{dataset_name}'  # IO path to store the dataset 
     mat_path= './raw_data/DREAMER.mat'
     dataset = DREAMERDataset(io_path=f"{io_path}",
@@ -132,8 +132,8 @@ if __name__ == "__main__":
     #               hid_channels= 32,
     #               num_classes= 2)
 
-    model = NovModel(F1= 14, layers_tcn=4, filt_tcn= 14, kernel_tcn=16, dropout_tcn= 0.5, activation_tcn= 'relu',
-                 temporal_size=128, num_electrodes=14, layers_cheby=10, hid_channels_cheby=64, num_classes=2)# EXPERIMENTAL!
+    model = NovModel(F1= 14, layers_tcn=2, filt_tcn= 14, kernel_tcn=16, dropout_tcn= 0.5, activation_tcn= 'relu',
+                 temporal_size=128, num_electrodes=14, layers_cheby=2, hid_channels_cheby=32, num_classes=2)# EXPERIMENTAL!
 
 
     print(f"Selected model name : {model.__class__.__name__}")
