@@ -44,7 +44,7 @@ if __name__ == "__main__":
     rng_num = 122
     batch_size = 256
     dataset_name= 'Dreamer_time_02'
-    emotion_dim= 'dominance' #valence arousal dominance
+    emotion_dim= 'valence' #valence arousal dominance
     io_path = f'./saves/datasets/{dataset_name}'  # IO path to store the dataset 
     mat_path= './raw_data/DREAMER.mat'
     dataset = DREAMERDataset(io_path=f"{io_path}",
@@ -120,7 +120,7 @@ if __name__ == "__main__":
     # model = VanillaTransformer_time()
 
     # model = EEGTCNet(n_classes=2)
-    model = TCNet_Fusion(input_size= dataset[0][0].shape, n_classes= 2, channels= dataset[0][0].shape[1], sampling_rate= 128)
+    # model = TCNet_Fusion(input_size= dataset[0][0].shape, n_classes= 2, channels= dataset[0][0].shape[1], sampling_rate= 128)
 
     # model = ATCNet(dataset[0][0].shape, dataset[0][0].shape[1] , n_classes=2, n_windows=8,
     #                    eegn_F1=24, eegn_D=2, eegn_kernelSize=50, eegn_poolSize=1, eegn_dropout=0.3, num_heads=8,
@@ -134,6 +134,10 @@ if __name__ == "__main__":
 
     # model = NovModel(F1= 14, layers_tcn=4, filt_tcn= 14, kernel_tcn=16, dropout_tcn= 0.5, activation_tcn= 'relu',
     #              temporal_size=512, num_electrodes=14, layers_cheby=10, hid_channels_cheby=64, num_classes=2)# EXPERIMENTAL!
+
+
+    model = TSceptionATN(num_classes=2, input_size= dataset[0][0].shape, sampling_rate=128, num_T=32, num_S=32, hidden=64, dropout_rate=0.4)
+
 
 
     print(f"Selected model name : {model.__class__.__name__}")
