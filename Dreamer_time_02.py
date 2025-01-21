@@ -84,13 +84,12 @@ if __name__ == "__main__":
 
     # Split train val test 
     split_type = 'simple'
-    match split_type:
-        case 'group_by_trial':
-            train_dataset, test_dataset = train_test_split_groupby_trial(dataset= dataset, test_size = 0.2, shuffle= True) #, random_state= rng_num)
-            train_dataset, val_dataset = train_test_split_groupby_trial(dataset= train_dataset, test_size = 0.2, shuffle=True) #, random_state= rng_num)
-        case 'simple':
-            train_dataset, test_dataset = train_test_split(dataset= dataset, test_size = 0.2, shuffle= True) #, random_state= rng_num)
-            train_dataset, val_dataset = train_test_split(dataset= train_dataset, test_size = 0.2, shuffle=True) #, random_state= rng_num)
+    if split_type == 'group_by_trial':
+        train_dataset, test_dataset = train_test_split_groupby_trial(dataset= dataset, test_size = 0.2, shuffle= True) #, random_state= rng_num)
+        train_dataset, val_dataset = train_test_split_groupby_trial(dataset= train_dataset, test_size = 0.2, shuffle=True) #, random_state= rng_num)
+    elif split_type == 'simple':
+        train_dataset, test_dataset = train_test_split(dataset= dataset, test_size = 0.2, shuffle= True) #, random_state= rng_num)
+        train_dataset, val_dataset = train_test_split(dataset= train_dataset, test_size = 0.2, shuffle=True) #, random_state= rng_num)
 
     # Create train/val/test dataloaders
     train_loader = DataLoader(train_dataset, batch_size= batch_size, shuffle=True)
