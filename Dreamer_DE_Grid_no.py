@@ -72,12 +72,12 @@ if __name__ == "__main__":
                             num_worker=4)
 
                         
-    print(dataset)
-    print(dataset[0])
-    print(dataset[0][0].shape)
-    print(dataset[0][1])
+    # print(dataset)
+    # print(dataset[0])
+    # print(dataset[0][0].shape)
+    # print(dataset[0][1])
 
-    sys.exit()
+    # sys.exit()
 
 
 
