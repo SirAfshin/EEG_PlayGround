@@ -1,3 +1,11 @@
+import sys
+import os
+
+# Dynamically add the root directory to sys.path
+# Assumes that 'models' and 'utils' are in the same project root directory
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, project_root)
+
 import math
 import matplotlib.pyplot as plt
 
@@ -9,6 +17,8 @@ import torch.optim as optim
 from torch.nn.parameter import Parameter
 
 from einops.layers.torch import Rearrange
+
+from utils.utils import get_num_trainable_params
 
 # Activation Function dictionary
 nonlinearity_dict = dict(relu=nn.ReLU(), elu=nn.ELU())
@@ -184,4 +194,4 @@ if __name__ == "__main__":
     model = TSceptionATN(2,[1,14,128],128,32,32,64,0.3)   
     print(model(x).shape)
 
-
+    print(get_num_trainable_params(model,1))
