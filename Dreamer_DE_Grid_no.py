@@ -54,7 +54,7 @@ if __name__ == "__main__":
                                 # normalize along the second dimension (temproal dimension)
                                 # transforms.MeanStdNormalize(axis=1, apply_to_baseline=True),# MeanStdNormalize() , MinMaxNormalize()
                                 transforms.BandDifferentialEntropy(band_dict={"delta": [1,4],"theta": [4, 8], "alpha": [8, 14], "beta": [14, 31], "gamma": [31, 49] }, apply_to_baseline=True),
-                                transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT, apply_to_baseline=True),
+                                transforms.ToGrid(DREAMER_CHANNEL_LOCATION_DICT, apply_to_baseline=True),
                             ]),
                             online_transform=transforms.Compose([
                                 # transforms.BaselineRemoval(),
