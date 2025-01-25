@@ -143,7 +143,7 @@ def save_model_checkpoint(model, optimizer, epoch, loss, acc, save_path, file_na
     print(f"Model saved to {model_save_path}")
 
 
-def save_training_plots(loss_hist, acc_hist, save_path, file_name_prefix="training"):
+def save_training_plots(loss_hist, acc_hist, save_path, file_name_prefix="training", title1="Loss", title2="Accuracy"):
     """
     Save the loss and accuracy plots as PNG files.
     
@@ -156,22 +156,22 @@ def save_training_plots(loss_hist, acc_hist, save_path, file_name_prefix="traini
     # Save loss plot
     plt.figure()
     plt.plot(range(len(loss_hist)), loss_hist)
-    plt.title('Loss over Epochs')
+    plt.title(f'{title1} over Epochs')
     plt.xlabel('Epoch')
-    plt.ylabel('Loss')
-    loss_plot_path = os.path.join(save_path, f"{file_name_prefix}_loss.png")
+    plt.ylabel(title1)
+    loss_plot_path = os.path.join(save_path, f"{file_name_prefix}_{title1.lower()}.png")
     plt.savefig(loss_plot_path)
-    print(f"Loss plot saved to {loss_plot_path}")
+    print(f"{title1} plot saved to {loss_plot_path}")
     
     # Save accuracy plot
     plt.figure()
     plt.plot(range(len(acc_hist)), acc_hist)
-    plt.title('Accuracy over Epochs')
+    plt.title(f'{title2} over Epochs')
     plt.xlabel('Epoch')
-    plt.ylabel('Accuracy')
-    acc_plot_path = os.path.join(save_path, f"{file_name_prefix}_accuracy.png")
+    plt.ylabel(title2)
+    acc_plot_path = os.path.join(save_path, f"{file_name_prefix}_{title2.lower()}.png")
     plt.savefig(acc_plot_path)
-    print(f"Accuracy plot saved to {acc_plot_path}")
+    print(f"{title2} plot saved to {acc_plot_path}")
     
 
 # Training loop that calls the save functions
@@ -427,7 +427,7 @@ def train_validate_test_lrschedule_and_save_(model, dataset_name, model_name, em
     return loss_hist, acc_hist, loss_val_hist, acc_val_hist, loss_test, acc_test
 
 
-
+# TODO: test phase should be performed on the 2 best models saved!
 # tvt = train validate test
 def tvt_save_acc_loss_f1(model, dataset_name, model_name, emotion_dim, train_loader, val_loader, test_loader, optimizer, loss_fn, device, num_epochs=30, is_binary= True, num_classes= None, pre_path='.'):
     # Create the directory to save data
@@ -508,6 +508,7 @@ def tvt_save_acc_loss_f1(model, dataset_name, model_name, emotion_dim, train_loa
     log_handle.info(f"Model Parameter Count: {get_num_params(model,1)} ")
     log_handle.info("DONE!")
 
+    print("\n")
     print(f"[BEST ACC] Train: {max(acc_hist)} , Validation: {max(acc_val_hist)} , Test: {acc_test} ")
     print(f"[BEST Loss] Train: {min(loss_hist)} , Validation: {min(loss_val_hist)} , Test: {loss_test} ")
     print(f"[BEST F1] Train: {max(f1_hist)} , Validation: {max(f1_val_hist)} , Test: {f1_test} ")
