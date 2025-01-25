@@ -36,7 +36,7 @@ from models.cnn_lstm import LSTM_CNN_Model
 from models.Tsception import TSCEPTIONModel
 from models.YoloV9 import YOLO9_Backbone_Classifier
 from models.eegnet import EEGNet_Normal_data
-from models.Transformer import VanillaTransformer_time
+from models.Transformer import VanillaTransformer_time, VisionTransformerEEG
 from models.tcn_based import *
 from models.models import NovModel
 from models.cnn_based import TSceptionATN
@@ -139,9 +139,18 @@ if __name__ == "__main__":
     # model = NovModel(F1= 14, layers_tcn=4, filt_tcn= 14, kernel_tcn=16, dropout_tcn= 0.5, activation_tcn= 'relu',
     #              temporal_size=512, num_electrodes=14, layers_cheby=10, hid_channels_cheby=64, num_classes=2)# EXPERIMENTAL!
 
-
-    model = TSceptionATN(num_classes=2, input_size= dataset[0][0].shape, sampling_rate=128, num_T=32, num_S=32, hidden=64, dropout_rate=0.4)
-
+    # model = TSceptionATN(num_classes=2, input_size= dataset[0][0].shape, sampling_rate=128, num_T=32, num_S=32, hidden=64, dropout_rate=0.4)
+    model = VisionTransformerEEG(img_size= dataset[0][0].shape[1], # data[5,9,9]
+                                patch_size=3,
+                                in_chans=dataset[0][0].shape[0],
+                                n_classes=2,
+                                embed_dim=768,
+                                depth=12,
+                                n_heads=12,
+                                mlp_ratio=4.,
+                                qkv_bias=True,
+                                p=0.,
+                                attn_p=0.,)
 
 
     print(f"Selected model name : {model.__class__.__name__}")
@@ -165,7 +174,7 @@ if __name__ == "__main__":
     
 
     num_epochs = 800 # 300 500 600
-    model_name = "Dreamer_t2" + model.__class__.__name__ + "_Time_To2d" # _Time_To2d_b
+    model_name = "Dreamer_DE_Grid_" + model.__class__.__name__ + "" # _Time_To2d_b
 
     print(f"Start training for {num_epochs} epoch")
 
