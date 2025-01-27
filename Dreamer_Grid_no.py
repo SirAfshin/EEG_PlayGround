@@ -39,7 +39,7 @@ from models.eegnet import EEGNet_Normal_data
 from models.Transformer import VanillaTransformer_time , VisionTransformerEEG
 from models.tcn_based import *
 from models.models import NovModel
-from models.cnn_based import TSceptionATN
+from models.cnn_based import TSceptionATN , UNET_VIT
 
 if __name__ == "__main__":
     rng_num = 122
@@ -140,17 +140,24 @@ if __name__ == "__main__":
 
     # model = TSceptionATN(num_classes=2, input_size= dataset[0][0].shape, sampling_rate=128, num_T=32, num_S=32, hidden=64, dropout_rate=0.4)
     
-    model = VisionTransformerEEG(img_size= dataset[0][0].shape[1], # data[128,9,9]
-                                patch_size=3,
-                                in_chans=dataset[0][0].shape[0],
-                                n_classes=2,
-                                embed_dim=768,
-                                depth=12,
-                                n_heads=12,
-                                mlp_ratio=4.,
-                                qkv_bias=True,
-                                p=0.,
-                                attn_p=0.,)
+    # model = VisionTransformerEEG(img_size= dataset[0][0].shape[1], # data[128,9,9]
+    #                             patch_size=3,
+    #                             in_chans=dataset[0][0].shape[0],
+    #                             n_classes=2,
+    #                             embed_dim=768,
+    #                             depth=12,
+    #                             n_heads=12,
+    #                             mlp_ratio=4.,
+    #                             qkv_bias=True,
+    #                             p=0.,
+    #                             attn_p=0.,)
+    
+    model = UNET_VIT(
+        in_channels=dataset[0][0].shape[0], unet_out_channels=3,
+        img_size=dataset[0][0].shape[1], patch_size=3, 
+        n_classes=2, embed_dim=768, depth=5, n_heads=6,
+        mlp_ratio=4., qkv_bias=True, p=0.5, attn_p=0.5
+    )
     
     print(f"Selected model name : {model.__class__.__name__}")
     # print(f"Model parameter count: {get_num_params(model,1)}")
