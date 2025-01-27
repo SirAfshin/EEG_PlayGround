@@ -423,32 +423,59 @@ def get_loss_acc_from_log(file_path):
                 accuracies.append(acc)
     return losses, accuracies
 
+def resize_tensor(tensor, size, interpolation='bilinear'):
+    """
+    Resize a 4D tensor (B, C, H, W) to the specified size.
 
+    Parameters:
+    - tensor: The input tensor of shape (B, C, H, W).
+    - size: Desired output size as (H_out, W_out) or an int (H_out = W_out).
+    - interpolation: Interpolation method, default is 'bilinear'. 
+                     Options: 'nearest', 'bilinear', 'bicubic', 'trilinear', etc.
+
+    Returns:
+    - Resized tensor of shape (B, C, H_out, W_out).
+    """
+    # Ensure the size is in (H_out, W_out) format
+    if isinstance(size, int):
+        size = (size, size)
+    
+    # Perform resizing using F.interpolate
+    resized_tensor = F.interpolate(tensor, size=size, mode=interpolation, align_corners=False)
+    return resized_tensor
 
 if __name__ == "__main__":
-    seed = 100
-    # torch.random.manual_seed(seed)  
-    data = torch.randn(100,2)
-    target = torch.randn(100,1)
-    print(data.shape)
-    print(target.shape)
-    dataset = TensorDataset(data, target)
-    dataloader = DataLoader(dataset, batch_size= 10, shuffle= True)
+    # Create a sample tensor (batch size 1, 3 channels, 64x64 image)
+    tensor = torch.randn(1, 3, 64, 64)
+    
+    # Resize to 32x32
+    resized_tensor = resize_tensor(tensor, size=(32, 32))
+    print(f"Original shape: {tensor.shape}, Resized shape: {resized_tensor.shape}")
 
-    print(len(dataloader))
 
-    model = nn.Sequential(nn.Linear(2,10),
-                            nn.ReLU(),
-                            nn.Linear(10,1))
-    loss_fn = nn.BCEWithLogitsLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.01)
+    # seed = 100
+    # # torch.random.manual_seed(seed)  
+    # data = torch.randn(100,2)
+    # target = torch.randn(100,1)
+    # print(data.shape)
+    # print(target.shape)
+    # dataset = TensorDataset(data, target)
+    # dataloader = DataLoader(dataset, batch_size= 10, shuffle= True)
 
-    loss_hist = []
-    num_epochs = 10
-    for epoch in range(num_epochs):
-        model, loss = train_one_epoch(model, optimizer, loss_fn, dataloader, 'cpu', epoch)
-        loss_hist.append(loss)
+    # print(len(dataloader))
 
-    plt.plot(range(num_epochs), loss_hist)
-    plt.show()
+    # model = nn.Sequential(nn.Linear(2,10),
+    #                         nn.ReLU(),
+    #                         nn.Linear(10,1))
+    # loss_fn = nn.BCEWithLogitsLoss()
+    # optimizer = optim.Adam(model.parameters(), lr=0.01)
+
+    # loss_hist = []
+    # num_epochs = 10
+    # for epoch in range(num_epochs):
+    #     model, loss = train_one_epoch(model, optimizer, loss_fn, dataloader, 'cpu', epoch)
+    #     loss_hist.append(loss)
+
+    # plt.plot(range(num_epochs), loss_hist)
+    # plt.show()
     
