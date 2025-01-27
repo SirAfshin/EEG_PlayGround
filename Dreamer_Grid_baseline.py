@@ -145,12 +145,12 @@ if __name__ == "__main__":
                                 in_chans=dataset[0][0].shape[0],
                                 n_classes=2,
                                 embed_dim=768,
-                                depth=12,
-                                n_heads=12,
+                                depth=5, #12
+                                n_heads=6, # 12
                                 mlp_ratio=4.,
                                 qkv_bias=True,
-                                p=0.,
-                                attn_p=0.,)
+                                p=0.5,
+                                attn_p=0.5,)
     
     print(f"Selected model name : {model.__class__.__name__}")
     # print(f"Model parameter count: {get_num_params(model,1)}")
@@ -163,8 +163,8 @@ if __name__ == "__main__":
     loss_fn = nn.CrossEntropyLoss()
     
     # ****************** Choose your Optimizer ******************************
-    # optimizer = optim.Adam(model.parameters(), lr=0.001) # lr = 0.0001  0.001
-    optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.937)
+    optimizer = optim.Adam(model.parameters(), lr=0.001) # lr = 0.0001  0.001
+    # optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.937)
 
 
     # ********************** Set The Device ***************************************
