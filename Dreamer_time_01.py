@@ -44,7 +44,7 @@ if __name__ == "__main__":
     rng_num = 122
     batch_size = 256
     dataset_name= 'Dreamer_time_01'
-    emotion_dim= 'dominance' #valence arousal dominance
+    emotion_dim= 'valence' #valence arousal dominance
     io_path = f'./saves/datasets/{dataset_name}'  # IO path to store the dataset 
     mat_path= './raw_data/DREAMER.mat'
     dataset = DREAMERDataset(io_path=f"{io_path}",
@@ -156,7 +156,7 @@ if __name__ == "__main__":
     print(f"Using device: {device}")
     
 
-    num_epochs = 800 # 300 500 600
+    num_epochs = 800  # 300 500 600 800
     model_name = "Dreamer_" + model.__class__.__name__ + "_Time_To2d" # _Time_To2d_b
 
     print(f"Start training for {num_epochs} epoch")

@@ -442,6 +442,12 @@ def tvt_save_acc_loss_f1(model, dataset_name, model_name, emotion_dim, train_loa
     log_handle.info(f"Training model [{model_name}]")
     log_handle.info(f"Using Optimizer [{optimizer.__class__.__name__}] with learning rate = {optimizer.param_groups[0]['lr']}")
     log_handle.info(f"Using Loss Function [{loss_fn.__class__.__name__}]")
+    try:
+        log_handle.info(f"Model Parameter Count: {get_num_params(model,1)} ")
+        print(f"Model Parameter Count: {get_num_params(model,1)} ")
+    except:
+        pass
+
 
     # Lists to store loss and accuracy values
     loss_hist = []
@@ -490,32 +496,48 @@ def tvt_save_acc_loss_f1(model, dataset_name, model_name, emotion_dim, train_loa
         if epoch % 10 == 0  and epoch != 0:
             save_training_plots(loss_hist, acc_hist, save_path)
             save_training_plots(loss_val_hist, acc_val_hist, save_path,file_name_prefix="validation")
-            save_training_plots(f1_hist, f1_val_hist, save_path,file_name_prefix="F1_Only")
+            save_training_plots(f1_hist, f1_val_hist, save_path,file_name_prefix="F1_Only",title1="F1_train", title2="F1_val")
+
+    # Load best acc models
+    model_load_path_acc = os.path.join(save_path,"best_model_checkpoint_acc.pth")
+    checkpoint = torch.load(model_load_path_acc)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    loss_test_acc, acc_test_acc, f1_test_acc = validation_with_tqdm_withF1(model,test_loader, loss_fn, device, is_binary, num_classes)
+
+    # Load best loss models
+    model_load_path_acc = os.path.join(save_path,"best_model_checkpoint_loss.pth")
+    checkpoint = torch.load(model_load_path_acc)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    loss_test_loss, acc_test_loss, f1_test_loss = validation_with_tqdm_withF1(model,test_loader, loss_fn, device, is_binary, num_classes)
+
 
     # Test model performance on test data
-    loss_test, acc_test, f1_test = validation_with_tqdm_withF1(model,test_loader, loss_fn, device, is_binary, num_classes)
-    log_handle.info(f"[Test] Loss: {loss_test} , Accuracy: {acc_test}, F1-Score: {f1_test}")
+    # loss_test, acc_test, f1_test = validation_with_tqdm_withF1(model,test_loader, loss_fn, device, is_binary, num_classes)
+    # log_handle.info(f"[Test] Loss: {loss_test} , Accuracy: {acc_test}, F1-Score: {f1_test}")
+
+    log_handle.info(f"[Test-Best Loss] Loss: {loss_test_loss} , Accuracy: {acc_test_loss}, F1-Score: {f1_test_loss}")
+    log_handle.info(f"[Test-Best Accuracy] Loss: {loss_test_acc} , Accuracy: {acc_test_acc}, F1-Score: {f1_test_acc}")
 
     # Save the training plots
     save_training_plots(loss_hist, acc_hist, save_path)
     save_training_plots(loss_val_hist, acc_val_hist, save_path,file_name_prefix="validation")
-    save_training_plots(f1_hist, f1_val_hist, save_path,file_name_prefix="F1_Only")
+    save_training_plots(f1_hist, f1_val_hist, save_path,file_name_prefix="F1_Only",title1="F1_train", title2="F1_val")
+
     
-    log_handle.info(f"[BEST ACC] Train: {max(acc_hist)} , Validation: {max(acc_val_hist)} , Test: {acc_test} ")
-    log_handle.info(f"[BEST Loss] Train: {min(loss_hist)} , Validation: {min(loss_val_hist)} , Test: {loss_test} ")
-    log_handle.info(f"[BEST F1] Train: {max(f1_hist)} , Validation: {max(f1_val_hist)} , Test: {f1_test} ")
+    log_handle.info(f"[BEST ACC] Train: {max(acc_hist)} , Validation: {max(acc_val_hist)} , Test: {max(acc_test_loss,acc_test_acc)} ")
+    log_handle.info(f"[BEST Loss] Train: {min(loss_hist)} , Validation: {min(loss_val_hist)} , Test: {min(loss_test_loss,loss_test_acc)} ")
+    log_handle.info(f"[BEST F1] Train: {max(f1_hist)} , Validation: {max(f1_val_hist)} , Test: {max(f1_test_acc,f1_test_loss)} ")
     
     log_handle.info(f"Model Parameter Count: {get_num_params(model,1)} ")
     log_handle.info("DONE!")
 
-    print("\n")
-    print(f"[BEST ACC] Train: {max(acc_hist)} , Validation: {max(acc_val_hist)} , Test: {acc_test} ")
-    print(f"[BEST Loss] Train: {min(loss_hist)} , Validation: {min(loss_val_hist)} , Test: {loss_test} ")
-    print(f"[BEST F1] Train: {max(f1_hist)} , Validation: {max(f1_val_hist)} , Test: {f1_test} ")
+    print(f"[BEST ACC] Train: {max(acc_hist)} , Validation: {max(acc_val_hist)} , Test: {max(acc_test_loss,acc_test_acc)} ")
+    print(f"[BEST Loss] Train: {min(loss_hist)} , Validation: {min(loss_val_hist)} , Test: {min(loss_test_loss,loss_test_acc)} ")
+    print(f"[BEST F1] Train: {max(f1_hist)} , Validation: {max(f1_val_hist)} , Test: {max(f1_test_acc,f1_test_loss)} ")
     print(f"Model Parameter Count: {get_num_params(model,1)} ")
     print("Training complete and data saved!")
 
-    return loss_hist, acc_hist , loss_val_hist , acc_val_hist , loss_test, acc_test , (f1_hist, f1_val_hist, f1_test)
+    return loss_hist, acc_hist , loss_val_hist , acc_val_hist , min(loss_test_loss,loss_test_acc), max(acc_test_loss,acc_test_acc) , (f1_hist, f1_val_hist, max(f1_test_acc,f1_test_loss))
 
 
 if __name__ == "__main__":
@@ -579,3 +601,6 @@ if __name__ == "__main__":
 
     # Start training and save the model, plots, and other data
     train_and_save(model, dataset_name, model_name, emotion_dim, dataloader, optimizer, loss_fn, device,num_epochs=3)
+    # tvt_save_acc_loss_f1(model, dataset_name, model_name, emotion_dim, dataloader, dataloader, dataloader, optimizer, loss_fn, device, num_epochs=3, is_binary= False, num_classes=2 , pre_path='.')
+
+
