@@ -1,6 +1,14 @@
 # EEG Emotion Detection Playground
 This repositry contains codes and datasets for eeg emotion detection.
 
+# Code Names
+- BC : Baseline Correction
+- BR : Baseline Removal
+- Tx : segment length is x seconds
+- Ox : overlp is x seconds
+- Grid : ToGrid()
+- 2d : To2d()
+
 
 # Usefull links
 - https://github.com/pytorch/vision/blob/main/references/detection/utils.py
@@ -9,7 +17,7 @@ This repositry contains codes and datasets for eeg emotion detection.
 - https://arxiv.org/pdf/2401.18006v2
 - https://github.com/hazdzz/ChebyNet/tree/main/model
 -
--
+- Why Baseline Correction [https://neuro.inf.unibe.ch/AlgorithmsNeuroscience/Tutorial_files/BaselineCorrection.html]
 -
 -
 -
