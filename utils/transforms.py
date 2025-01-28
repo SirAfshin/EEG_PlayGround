@@ -94,6 +94,41 @@ class STFTSpectrogram(EEGTransform):
                 'contourf': self.contourf
             })
 
+class BaselineCorrection(EEGTransform):
+    r'''
+    A transform for performing baseline correction on EEG data.
+    This subtracts the mean of the baseline period from every time point of the signal (baseline and post-stimulus).
+
+    Args:
+        apply_to_baseline (bool): Whether to apply the transform to the baseline data (default: True).
+
+    Returns:
+        A dictionary containing the baseline-corrected EEG data.
+    '''
+    def __init__(self, apply_to_baseline: bool = True):
+        super(BaselineCorrection, self).__init__(apply_to_baseline=apply_to_baseline)
+
+    def __call__(self, 
+                 *args, 
+                 eeg: np.ndarray, 
+                 baseline: Union[np.ndarray, None] = None, 
+                 **kwargs) -> Dict[str, np.ndarray]:
+        return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
+
+    def apply(self, eeg: np.ndarray, baseline: np.ndarray = None, **kwargs) -> np.ndarray:
+        # Calculate the mean of the baseline period for each channel
+        baseline_mean = np.mean(baseline, axis=-1, keepdims=True)
+        
+        # Subtract the baseline mean from the entire EEG signal (baseline + post-stimulus)
+        corrected_eeg = eeg - baseline_mean
+        
+        return corrected_eeg
+
+    @property
+    def repr_body(self) -> Dict:
+        return dict(super().repr_body, {})
+
+
 class MelSpectrogram(EEGTransform):
     '''
     A transform method to convert EEG signals of each channel into Mel spectrograms.
