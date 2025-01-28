@@ -30,6 +30,8 @@ warnings.filterwarnings('ignore')
 from utils.checkpoint import train_and_save,  train_validate_and_save, train_validate_test_and_save, tvt_save_acc_loss_f1
 from utils.log import get_logger
 from utils.utils import print_var, train_one_epoch, train_one_epoch_lstm, get_num_params, train_one_step_tqdm
+from utils.transforms import TORCHEEGBaselineCorrection
+
 from models.cnn import Two_Layer_CNN, Two_Layer_CNN_Pro, Simplified_CNN
 from models.rnns import LSTM
 from models.cnn_lstm import LSTM_CNN_Model
@@ -57,7 +59,7 @@ if __name__ == "__main__":
                             ]),
                             online_transform=transforms.Compose([
                                 transforms.To2d(apply_to_baseline=True),
-                                transforms.BaselineCorrection(),
+                                TORCHEEGBaselineCorrection(),
                                 transforms.ToTensor(),
                             ]),
                             label_transform=transforms.Compose([
