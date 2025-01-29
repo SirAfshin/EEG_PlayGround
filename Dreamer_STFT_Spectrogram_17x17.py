@@ -20,7 +20,7 @@ from torcheeg.datasets.constants import DREAMER_CHANNEL_LOCATION_DICT
 from torcheeg.datasets.constants import DREAMER_ADJACENCY_MATRIX
 from torcheeg.datasets import DREAMERDataset
 from torcheeg.model_selection import KFoldGroupbyTrial
-from torcheeg.model_selection import train_test_split_groupby_trial
+from torcheeg.model_selection import train_test_split_groupby_trial, train_test_split
 
 from tqdm import tqdm
 import matplotlib.pyplot as plt
