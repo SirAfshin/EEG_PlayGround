@@ -242,9 +242,14 @@ def train_one_step_tqdm_withF1(model, train_loader, loss_fn, optimizer, device, 
             loss_train.update(loss.item())
             acc_train(outputs.squeeze(), targets.int())
             
-            tepoch.set_postfix(loss= loss_train.avg,
-                                accuracy= 100.0 * acc_train.compute().item(),
-                                F1= f1_train.avg)
+
+            tepoch.set_postfix(loss=f"{loss_train.avg:.4f}",
+                               accuracy=f"{100.0 * acc_train.compute().item():.4f}",
+                               F1=f"{f1_train.avg:.4f}")
+
+            # tepoch.set_postfix(loss= loss_train.avg,
+            #                     accuracy= 100.0 * acc_train.compute().item(),
+            #                     F1= f1_train.avg)
 
     return model, loss_train.avg, acc_train.compute().item(), f1_train.avg
 
@@ -282,6 +287,11 @@ def validation_with_tqdm_withF1(model, test_loader, loss_fn, device='cpu', is_bi
             f1_valid.update(f1)
             loss_valid.update(loss.item())
             acc_valid(outputs.squeeze(), targets.int())
+
+            tepoch.set_postfix(loss=f"{loss_valid.avg:.4f}",
+                               accuracy=f"{100.0 * acc_valid.compute().item():.4f}",
+                               F1=f"{f1_train.avg:.4f}")
+
             tepoch.set_postfix(loss= loss_valid.avg,
                                 accuracy= 100.0 * acc_valid.compute().item(),
                                 F1= f1_valid.avg)
