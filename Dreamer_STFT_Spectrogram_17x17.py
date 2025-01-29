@@ -144,7 +144,7 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
     
-    num_epochs = 2 # 300 500 600
+    num_epochs = 800 # 300 500 600
     model_name = "STFT_" + model.__class__.__name__ + "_17x17" 
 
     print(f"Start training for {num_epochs} epoch")
