@@ -290,11 +290,11 @@ def validation_with_tqdm_withF1(model, test_loader, loss_fn, device='cpu', is_bi
 
             tepoch.set_postfix(loss=f"{loss_valid.avg:.4f}",
                                accuracy=f"{100.0 * acc_valid.compute().item():.4f}",
-                               F1=f"{f1_train.avg:.4f}")
+                               F1=f"{f1_valid.avg:.4f}")
 
-            tepoch.set_postfix(loss= loss_valid.avg,
-                                accuracy= 100.0 * acc_valid.compute().item(),
-                                F1= f1_valid.avg)
+            # tepoch.set_postfix(loss= loss_valid.avg,
+            #                     accuracy= 100.0 * acc_valid.compute().item(),
+            #                     F1= f1_valid.avg)
 
     return loss_valid.avg, acc_valid.compute().item(), f1_valid.avg
 
