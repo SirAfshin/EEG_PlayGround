@@ -29,13 +29,14 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # Local Imports
-from utils.checkpoint import train_and_save,  train_validate_and_save, train_validate_test_and_save
+from utils.checkpoint import train_and_save,  train_validate_and_save, train_validate_test_and_save, tvt_save_acc_loss_f1
 from utils.log import get_logger
 from utils.utils import print_var, train_one_epoch, train_one_epoch_lstm, get_num_params, train_one_step_tqdm
 from utils.transforms import STFTSpectrogram
 
 from models.STFT_Spectrogram.stft_cnn import STFT_Two_Layer_CNN_Pro, STFT_Three_Layer_CNN_Pro
 from models.STFT_Spectrogram.stft_cnn_lstm import STFT_LSTM_CNN_Model
+from models.cnn_based import  UNET_VIT
 
 
 _DataSets = ['Dreamer_time_series_01',
@@ -85,9 +86,13 @@ if __name__ == "__main__":
 
 
     # Split train val test 
-    train_dataset, test_dataset = train_test_split_groupby_trial(dataset= dataset, test_size = 0.2, shuffle= True, random_state= rng_num)
-    train_dataset, val_dataset = train_test_split_groupby_trial(dataset= train_dataset, test_size = 0.1, shuffle=True, random_state= rng_num)
-    
+    split_type = 'group_by_trial'
+    if split_type == 'group_by_trial':
+        train_dataset, test_dataset = train_test_split_groupby_trial(dataset= dataset, test_size = 0.2, shuffle= True) #, random_state= rng_num)
+        train_dataset, val_dataset = train_test_split_groupby_trial(dataset= train_dataset, test_size = 0.2, shuffle=True) #, random_state= rng_num)
+    elif split_type == 'simple':
+        train_dataset, test_dataset = train_test_split(dataset= dataset, test_size = 0.2, shuffle= True) #, random_state= rng_num)
+        train_dataset, val_dataset = train_test_split(dataset= train_dataset, test_size = 0.2, shuffle=True) #, random_state= rng_num)
 
     # Create train/val/test dataloaders
     train_loader = DataLoader(train_dataset, batch_size= batch_size, shuffle=True)
@@ -110,8 +115,16 @@ if __name__ == "__main__":
 
     # ****************** Choose your Model ******************************
     # model = STFT_Two_Layer_CNN_Pro() ########## 95.5
-    model = STFT_Three_Layer_CNN_Pro()
+    # model = STFT_Three_Layer_CNN_Pro()
     # model = STFT_LSTM_CNN_Model()
+
+    model = UNET_VIT(
+        in_channels=dataset[0][0].shape[0], unet_out_channels=3,
+        img_size=dataset[0][0].shape[1], patch_size=3, 
+        n_classes=2, embed_dim=768, depth=5, n_heads=6,
+        mlp_ratio=4., qkv_bias=True, p=0.5, attn_p=0.5
+    )
+
 
     print(f"Selected model name : {model.__class__.__name__}")
     # print(f"Model parameter count: {get_num_params(model,1)}")
@@ -119,8 +132,9 @@ if __name__ == "__main__":
     print('*' * 30)
     
     # ****************** Choose your Loss Function ******************************
-    loss_fn = nn.BCEWithLogitsLoss()
+    # loss_fn = nn.BCEWithLogitsLoss()
     # loss_fn = nn.MSELoss()
+    loss_fn = nn.CrossEntropyLoss()
     
     # ****************** Choose your Optimizer ******************************
     optimizer = optim.Adam(model.parameters(), lr=0.001) # lr = 0.0001  0.001
@@ -130,28 +144,52 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
     
-    num_epochs = 100 # 300 500 600
-    model_name = model.__class__.__name__ + "_17x17" 
+    num_epochs = 2 # 300 500 600
+    model_name = "STFT_" + model.__class__.__name__ + "_17x17" 
 
     print(f"Start training for {num_epochs} epoch")
 
     model = model.to(device)
-    loss_hist, acc_hist , loss_val_hist , acc_val_hist, loss_test, acc_test = train_validate_test_and_save(model, 
-                                                                                    dataset_name, 
-                                                                                    model_name, 
-                                                                                    emotion_dim, 
-                                                                                    train_loader, 
-                                                                                    val_loader,
-                                                                                    test_loader,  
-                                                                                    optimizer, 
-                                                                                    loss_fn, 
-                                                                                    device, 
-                                                                                    num_epochs=num_epochs)
+    loss_hist, acc_hist , loss_val_hist , \
+    acc_val_hist, loss_test, acc_test ,\
+    (f1_hist, f1_val_hist, f1_test) = tvt_save_acc_loss_f1(model, 
+                                                            dataset_name, 
+                                                            model_name, 
+                                                            emotion_dim, 
+                                                            train_loader, 
+                                                            val_loader,
+                                                            test_loader,  
+                                                            optimizer, 
+                                                            loss_fn, 
+                                                            device, 
+                                                            num_epochs=num_epochs,
+                                                            is_binary= False,
+                                                            num_classes= 2)
 
-
+    
     print("Training process is done!")
-    print(f"Test: LOSS: {loss_test}, ACC: {acc_test}")
+    print(f"Test: LOSS: {loss_test}, ACC: {acc_test}, F1: {f1_test}")
     print(f"Model parameter count: {get_num_params(model,1)}")
+
+
+
+    # model = model.to(device)
+    # loss_hist, acc_hist , loss_val_hist , acc_val_hist, loss_test, acc_test = train_validate_test_and_save(model, 
+    #                                                                                 dataset_name, 
+    #                                                                                 model_name, 
+    #                                                                                 emotion_dim, 
+    #                                                                                 train_loader, 
+    #                                                                                 val_loader,
+    #                                                                                 test_loader,  
+    #                                                                                 optimizer, 
+    #                                                                                 loss_fn, 
+    #                                                                                 device, 
+    #                                                                                 num_epochs=num_epochs)
+
+
+    # print("Training process is done!")
+    # print(f"Test: LOSS: {loss_test}, ACC: {acc_test}")
+    # print(f"Model parameter count: {get_num_params(model,1)}")
 
     # # Plot Losses
     # plt.figure()

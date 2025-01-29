@@ -302,4 +302,18 @@ if __name__ == "__main__":
     print(get_num_trainable_params(model,1))
     print(f"[UNET_VIT] original input: {x.shape}, output: {model(x).shape}")
     #########################################################################
+    
+    print('*'*20)
+    x = torch.rand(10,14,17,17)
+
+    model = UNET(in_channels=x.shape[1],out_channels=1, feature_channels=[64,128,256,512])
+    print(get_num_trainable_params(model,1))
+    print(f"[UNET] original input: {x.shape}, output: {model(x).shape}")
+
+    model = UNET_VIT(
+        in_channels=x.shape[1],unet_out_channels=3,img_size=17, patch_size=3, 
+        n_classes=2,embed_dim=768,depth=5, n_heads=6,mlp_ratio=4.,qkv_bias=True,p=0.5,attn_p=0.5)
+    print(get_num_trainable_params(model,1))
+    print(f"[UNET_VIT] original input: {x.shape}, output: {model(x).shape}")
+    #########################################################################
 
