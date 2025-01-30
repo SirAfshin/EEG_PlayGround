@@ -161,13 +161,13 @@ if __name__ == "__main__":
     # )
 
     model = ArjunViT( #Does not accept To2d data, must keep in mind
-                    chunk_size=128,
-                    t_patch_size=512,
+                    chunk_size=1920, # 15 * 128
+                    t_patch_size=640, # 5 * 128
                     num_electrodes=32,
                     heads=8,
                     depth=6,
-                    embed_dropout=0.7,
-                    dropout=0.7,
+                    embed_dropout=0.4,
+                    dropout=0.4,
                     num_classes=2)
 
     print(f"Selected model name : {model.__class__.__name__}")
@@ -181,8 +181,8 @@ if __name__ == "__main__":
     loss_fn = nn.CrossEntropyLoss()
     
     # ****************** Choose your Optimizer ******************************
-    optimizer = optim.Adam(model.parameters(), lr=0.001) # lr = 0.0001  0.001
-    # optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.937)
+    # optimizer = optim.Adam(model.parameters(), lr=0.001) # lr = 0.0001  0.001
+    optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.937, weight_decay=1e-5)
 
 
     # ********************** Set The Device ***************************************
@@ -190,7 +190,7 @@ if __name__ == "__main__":
     print(f"Using device: {device}")
     
 
-    num_epochs = 800 # 300 500 600
+    num_epochs = 400 # 300 500 600
     model_name = dataset_name + "_" + model.__class__.__name__ + "" # 
 
     print(f"Start training for {num_epochs} epoch")
