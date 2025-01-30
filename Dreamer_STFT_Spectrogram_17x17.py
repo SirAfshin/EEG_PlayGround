@@ -138,7 +138,7 @@ if __name__ == "__main__":
     
     # ****************** Choose your Optimizer ******************************
     # optimizer = optim.Adam(model.parameters(), lr=0.001) # lr = 0.0001  0.001
-    optimizer = optim.SGD(model.parameters(), lr=0.0001, momentum=0.937,weight_decay=1e-5)
+    optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.937,weight_decay=1e-5) # TRAIN!
 
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

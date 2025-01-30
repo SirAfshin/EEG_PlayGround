@@ -45,7 +45,7 @@ from models.cnn_based import TSceptionATN, UNET_VIT
 
 if __name__ == "__main__":
     rng_num = 122
-    batch_size = 256
+    batch_size = 32
     dataset_name= 'Dreamer_2d_T15_O0_BC'
     emotion_dim= 'valence' #valence arousal dominance
     io_path = f'./saves/datasets/{dataset_name}'  # IO path to store the dataset 
@@ -59,7 +59,7 @@ if __name__ == "__main__":
                             ]),
                             online_transform=transforms.Compose([
                                 transforms.To2d(apply_to_baseline=True),
-                                TORCHEEGBaselineCorrection(),
+                                # TORCHEEGBaselineCorrection(),
                                 transforms.ToTensor(),
                             ]),
                             label_transform=transforms.Compose([
@@ -141,7 +141,7 @@ if __name__ == "__main__":
     # model = NovModel(F1= 14, layers_tcn=4, filt_tcn= 14, kernel_tcn=16, dropout_tcn= 0.5, activation_tcn= 'relu',
     #              temporal_size=512, num_electrodes=14, layers_cheby=10, hid_channels_cheby=64, num_classes=2)# EXPERIMENTAL!
 
-    model = TSceptionATN(num_classes=2, input_size= dataset[0][0].shape, sampling_rate=128, num_T=32, num_S=32, hidden=64, dropout_rate=0.4)
+    model = TSceptionATN(num_classes=2, input_size= dataset[0][0].shape, sampling_rate=128, num_T=128, num_S=64, hidden=512, dropout_rate=0.6)
     
     # model = VisionTransformerEEG(img_size= dataset[0][0].shape[1], # data[128,9,9]
     #                             patch_size=3,
@@ -174,8 +174,8 @@ if __name__ == "__main__":
     loss_fn = nn.CrossEntropyLoss()
     
     # ****************** Choose your Optimizer ******************************
-    optimizer = optim.Adam(model.parameters(), lr=0.001) # lr = 0.0001  0.001
-    # optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.937)
+    # optimizer = optim.Adam(model.parameters(), lr=0.001) # lr = 0.0001  0.001
+    optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.937, weight_decay=1e-5)
 
 
     # ********************** Set The Device ***************************************

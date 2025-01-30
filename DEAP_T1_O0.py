@@ -59,7 +59,7 @@ if __name__ == "__main__":
                                 transforms.MeanStdNormalize(axis=1, apply_to_baseline=True),# MeanStdNormalize() , MinMaxNormalize()
                             ]),
                             online_transform=transforms.Compose([
-                                transforms.To2d(apply_to_baseline=True),
+                                # transforms.To2d(apply_to_baseline=True),
                                 transforms.ToTensor(),
                             ]),
                             label_transform=transforms.Compose([
@@ -160,9 +160,9 @@ if __name__ == "__main__":
     #     mlp_ratio=4., qkv_bias=True, p=0.5, attn_p=0.5
     # )
 
-    model = ArjunViT(
+    model = ArjunViT( #Does not accept To2d data, must keep in mind
         chunk_size=128,
-        t_patch_size=50,
+        t_patch_size=16,
         num_electrodes=32,
         num_classes=2)
 
