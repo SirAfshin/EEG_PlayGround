@@ -478,8 +478,9 @@ def tvt_save_acc_loss_f1(model, dataset_name, model_name, emotion_dim, train_loa
         f1_hist.append(f1)
         f1_val_hist.append(f1_val)
         
+        # TODO: should I save based on loss of train or change it to val loss ????
         # Save the model checkpoint only if the current loss is better (lower) than the best loss
-        if loss < best_loss:
+        if loss < best_loss: 
             best_loss = loss  # Update the best loss
             # save_model_checkpoint(model, optimizer, epoch, loss, acc, save_path, file_name=f"best_model_checkpoint_epoch_{epoch}.pth")
             save_model_checkpoint(model, optimizer, epoch, loss, acc, save_path, file_name=f"best_model_checkpoint_loss.pth")
