@@ -452,6 +452,8 @@ if __name__ == "__main__":
     # t = STFTSpectrogram(n_fft=128, hop_length=1, contourf=False) # [batch,14, 65, 129]
     t = STFTSpectrogram(n_fft=64, hop_length=4, contourf=False) # [batch,14, 33, 33]
     t = STFTSpectrogram(n_fft=32, hop_length=8, contourf=False) # [batch,14, 17, 17]
+    t = STFTSpectrogram(n_fft=32, hop_length=6, contourf=False) # [batch,14, 17, 22]
+    t = STFTSpectrogram(n_fft=43, hop_length=6, contourf=False) # [batch,14, 22, 22]
 
     # Apply to EEG data (shape [channels, time_points])
     eeg_data = np.random.randn(1,14, 128)  
