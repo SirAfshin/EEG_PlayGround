@@ -250,6 +250,10 @@ class UNET(nn.Module):
         return x
 
 class UNET_VIT(nn.Module):
+    '''
+    Important note: embed_dim should be devidable by n_heads
+        => embed_dim % num_heads == 0
+    '''
     def __init__(self,in_channels=128,unet_out_channels=3,img_size=9, patch_size=3, 
     n_classes=2,embed_dim=768,depth=5, n_heads=6,mlp_ratio=4.,qkv_bias=True,p=0.5,attn_p=0.5,):
         super().__init__()
@@ -273,7 +277,113 @@ class UNET_VIT(nn.Module):
         return x
 
 
+# [2023]
+# EEG-Based Emotion Recognition by Convolutional Neural Network with Multi-Scale Kernels
+# Multi-Scale Convolution
+# input
+class MultiScaleKernelConvBlock(nn.Module):
+    def __init__(self,in_channels,out_channels):
+        super().__init__()
+        self.conv5x5 = nn.Conv2d(in_channels ,out_channels ,kernel_size=5 ,stride=1, padding='same' )#,padding=1)
+        self.conv7x7 = nn.Conv2d(in_channels ,out_channels ,kernel_size=7 ,stride=1, padding='same' )#,padding=2)
+        self.conv1x1 = nn.Conv2d(2*out_channels ,out_channels ,kernel_size=1)
+        self.bn = nn.BatchNorm2d(out_channels) # 2 times because of concatanation
+        self.relu = nn.ReLU()
 
+    def forward(self,x):
+        x1 = self.conv5x5(x)
+        x2 = self.conv7x7(x)
+        x = torch.cat((x1,x2),dim=1) # Concat along channel axis
+        x = self.conv1x1(x)
+        x = self.bn(x)
+        x = self.relu(x)
+        return x
+
+class MultiScaleConv(nn.Module):
+    def __init__(self,input_dim=[6,18,18], out_channels=[16,32,64,128],n_classes=2):
+        super().__init__()
+        self.multi_scale_convs = nn.ModuleList()
+        
+        in_channel = input_dim[0]
+        for out_ch in out_channels:
+            self.multi_scale_convs.append(
+                MultiScaleKernelConvBlock(in_channel, out_ch))
+            in_channel = out_ch
+        
+        self.fc = nn.Linear(out_channels[-1]*input_dim[1]*input_dim[2] , 2)
+
+    def forward(self,x):
+        for block in self.multi_scale_convs:
+            x = block(x)
+        x = torch.flatten(x,1)
+        x = self.fc(x)
+        return x
+
+# TODO: make the tsception unet model
+# TODO: make double conv of unet like the multi scale convs ? a Good change maybe
+# UNET TSception ViT => to use with raw data
+class DoubleConv_TSception(nn.Module):
+    '''
+    TSception inspired double conv block for unet basic blocks
+    One layer of conv is Tceptions
+    and the other layer is Sception
+    '''
+    def conv_block(self, in_chan, out_chan, kernel, step, pool):
+        return nn.Sequential(
+            nn.Conv2d(in_channels=in_chan, out_channels=out_chan,
+                      kernel_size=kernel, stride=step),
+            nn.LeakyReLU(),
+            nn.AvgPool2d(kernel_size=(1, pool), stride=(1, pool)))
+
+    def __init__(self, in_channels, out_channels):
+        super().__init__()
+        # def __init__(self, num_classes, input_size, sampling_rate, num_T, num_S, hidden, dropout_rate):
+        # input_size: 1 x EEG channel x datapoint
+        super(TSception, self).__init__()
+        self.inception_window = [0.5, 0.25, 0.125]
+        self.pool = 8
+        # by setting the convolutional kernel being (1,lenght) and the strids being 1 we can use conv2d to
+        # achieve the 1d convolution operation
+        self.Tception1 = self.conv_block(1, num_T, (1, int(self.inception_window[0] * sampling_rate)), 1, self.pool)
+        self.Tception2 = self.conv_block(1, num_T, (1, int(self.inception_window[1] * sampling_rate)), 1, self.pool)
+        self.Tception3 = self.conv_block(1, num_T, (1, int(self.inception_window[2] * sampling_rate)), 1, self.pool)
+
+        self.Sception1 = self.conv_block(num_T, num_S, (int(input_size[1]), 1), 1, int(self.pool * 0.25))
+        self.Sception2 = self.conv_block(num_T, num_S, (int(input_size[1] * 0.5), 1), (int(input_size[1] * 0.5), 1),
+                                         int(self.pool * 0.25))
+        self.fusion_layer = self.conv_block(num_S, num_S, (3, 1), 1, 4)
+        self.BN_t = nn.BatchNorm2d(num_T)
+        self.BN_s = nn.BatchNorm2d(num_S)
+        self.BN_fusion = nn.BatchNorm2d(num_S)
+
+        self.fc = nn.Sequential(
+            nn.Linear(num_S, hidden),
+            nn.ReLU(),
+            nn.Dropout(dropout_rate),
+            nn.Linear(hidden, num_classes)
+        )
+
+    def forward(self, x):
+        y = self.Tception1(x)
+        out = y
+        y = self.Tception2(x)
+        out = torch.cat((out, y), dim=-1)
+        y = self.Tception3(x)
+        out = torch.cat((out, y), dim=-1)
+        out = self.BN_t(out)
+        z = self.Sception1(out)
+        out_ = z
+        z = self.Sception2(out)
+        out_ = torch.cat((out_, z), dim=2)
+        out = self.BN_s(out_)
+        out = self.fusion_layer(out)
+        out = self.BN_fusion(out)
+        out = torch.squeeze(torch.mean(out, dim=-1), dim=-1)
+        out = self.fc(out)
+        return out
+         
+    def forward(self, x):
+        pass 
 
 if __name__ == "__main__":
     x = torch.rand(10,1,14,128)
@@ -317,3 +427,32 @@ if __name__ == "__main__":
     print(f"[UNET_VIT] original input: {x.shape}, output: {model(x).shape}")
     #########################################################################
 
+    print('*'*20)
+    x = torch.rand(10,14,17,17)
+
+    model = UNET(in_channels=x.shape[1],out_channels=1, feature_channels=[64,128,256,512])
+    print(get_num_trainable_params(model,1))
+    print(f"[UNET] original input: {x.shape}, output: {model(x).shape}")
+
+    model = UNET_VIT(
+        in_channels=x.shape[1],unet_out_channels=3,img_size=17, patch_size=3, 
+        n_classes=2,embed_dim=256,depth=5, n_heads=8,mlp_ratio=4.,qkv_bias=True,p=0.5,attn_p=0.5)
+    print(get_num_trainable_params(model,1))
+    print(f"[UNET_VIT] original input: {x.shape}, output: {model(x).shape}")
+    #########################################################################
+
+    print('*'*20)
+    x = torch.rand(10,6,18,18)
+    model = MultiScaleKernelConvBlock(6,12)
+    model2 = MultiScaleConv()
+    print(f"[MultiScaleKernelConvBlock] original: {x.shape}, output: {model(x).shape}")
+    print(f"[MultiScaleKernelConv] original: {x.shape}, output: {model2(x).shape}")
+    #########################################################################
+
+    print('*'*20)
+    x = torch.rand(10,14,17,17)
+    model = MultiScaleKernelConvBlock(x[0].shape[0],12)
+    model2 = MultiScaleConv(input_dim= x[0].shape, out_channels=[16,32,64,128], n_classes=2)
+    print(f"[MultiScaleKernelConvBlock] original: {x.shape}, output: {model(x).shape}")
+    print(f"[MultiScaleKernelConv] original: {x.shape}, output: {model2(x).shape}")
+    #########################################################################
