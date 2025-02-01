@@ -65,6 +65,7 @@ if __name__ == "__main__":
                                 transforms.MeanStdNormalize(),#MeanStdNormalize() , MinMaxNormalize()
                             ]),
                             online_transform=transforms.Compose([
+                                # transforms.BaselineRemoval(),
                                 transforms.ToTensor(),
                             ]),
                             label_transform=transforms.Compose([
@@ -121,7 +122,7 @@ if __name__ == "__main__":
     model = UNET_VIT(
         in_channels=dataset[0][0].shape[0], unet_out_channels=3,
         img_size=dataset[0][0].shape[1], patch_size=3, 
-        n_classes=2, embed_dim=768, depth=5, n_heads=6,
+        n_classes=2, embed_dim=768, depth=10, n_heads=6, #embed_dim= 768 , depth=5
         mlp_ratio=4., qkv_bias=True, p=0.5, attn_p=0.5
     )
 
@@ -144,7 +145,7 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
     
-    num_epochs = 20 # 300 500 600 800
+    num_epochs = 200 # 300 500 600 800
     model_name = "STFT_" + model.__class__.__name__ + "_17x17" 
 
     print(f"Start training for {num_epochs} epoch")
