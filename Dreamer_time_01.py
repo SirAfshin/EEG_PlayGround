@@ -38,11 +38,12 @@ from models.eegnet import EEGNet_Normal_data
 from models.Transformer import VanillaTransformer_time
 from models.tcn_based import *
 from models.models import NovModel
+from models.cnn_based import UNET_TSception_classifier
 
 
 if __name__ == "__main__":
     rng_num = 122
-    batch_size = 256
+    batch_size = 32
     dataset_name= 'Dreamer_time_01'
     emotion_dim= 'valence' #valence arousal dominance
     io_path = f'./saves/datasets/{dataset_name}'  # IO path to store the dataset 
@@ -132,8 +133,13 @@ if __name__ == "__main__":
     #               hid_channels= 32,
     #               num_classes= 2)
 
-    model = NovModel(F1= 14, layers_tcn=2, filt_tcn= 14, kernel_tcn=16, dropout_tcn= 0.5, activation_tcn= 'relu',
-                 temporal_size=128, num_electrodes=14, layers_cheby=2, hid_channels_cheby=32, num_classes=2)# EXPERIMENTAL!
+    # model = NovModel(F1= 14, layers_tcn=2, filt_tcn= 14, kernel_tcn=16, dropout_tcn= 0.5, activation_tcn= 'relu',
+    #              temporal_size=128, num_electrodes=14, layers_cheby=2, hid_channels_cheby=32, num_classes=2)# EXPERIMENTAL!
+
+    model = UNET_TSception_classifier(
+        in_channels=1, out_channels=3, feature_channels=[64,128,256,512], num_T=16, sampling_rate=128, num_channels=14, n_classes=2
+    ) # Not that good of a model
+
 
 
     print(f"Selected model name : {model.__class__.__name__}")
@@ -156,7 +162,7 @@ if __name__ == "__main__":
     print(f"Using device: {device}")
     
 
-    num_epochs = 800  # 300 500 600 800
+    num_epochs = 2  # 300 500 600 800
     model_name = "Dreamer_" + model.__class__.__name__ + "_Time_To2d" # _Time_To2d_b
 
     print(f"Start training for {num_epochs} epoch")
