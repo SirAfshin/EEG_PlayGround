@@ -429,7 +429,7 @@ class UNET_TSception(nn.Module):
         for down in self.downs:
             x = down(x)
             skip_connections.append(x)
-            # x = self.pool(x)
+            x = self.pool(x) # Remove if using for time data
 
         x = self.bottleneck(x)
 
