@@ -37,7 +37,7 @@ from utils.transforms import STFTSpectrogram
 from models.STFT_Spectrogram.stft_cnn import STFT_Two_Layer_CNN_Pro, STFT_Three_Layer_CNN_Pro
 from models.STFT_Spectrogram.stft_cnn_lstm import STFT_LSTM_CNN_Model
 from models.cnn_based import  UNET_VIT
-
+from models.cnn_based import UNET_VIT_TSception
 
 if __name__ == "__main__":
     rng_num =  2024 #122
