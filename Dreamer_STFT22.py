@@ -111,12 +111,21 @@ if __name__ == "__main__":
     # model = STFT_Three_Layer_CNN_Pro()
     # model = STFT_LSTM_CNN_Model()
 
-    model = UNET_VIT(
-        in_channels=dataset[0][0].shape[0], unet_out_channels=3,
+    # model = UNET_VIT(
+    #     in_channels=dataset[0][0].shape[0], unet_out_channels=3,
+    #     img_size=dataset[0][0].shape[1], patch_size=3, 
+    #     n_classes=2, embed_dim=768, depth=5, n_heads=6,
+    #     mlp_ratio=4., qkv_bias=True, p=0.5, attn_p=0.5
+    # )
+
+    # Note: Change sampling rate so that the Tsception kernels can have good kernel size 
+    # samplig rate /2(4 and 8) + 1 =>  16/2+1 16/4+1 16/8+1 => 9,5,3
+    model = UNET_VIT_TSception(
+        in_channels=dataset[0][0].shape[0],unet_out_channels=3,
         img_size=dataset[0][0].shape[1], patch_size=3, 
-        n_classes=2, embed_dim=768, depth=5, n_heads=6,
-        mlp_ratio=4., qkv_bias=True, p=0.5, attn_p=0.5
-    )
+        n_classes=2,embed_dim=256,depth=5, n_heads=8,
+        mlp_ratio=4.,qkv_bias=True,p=0.5,attn_p=0.5,
+        sampling_rate= 16, num_channels= 22) # The reason for sample rate is from above
 
 
     print(f"Selected model name : {model.__class__.__name__}")
@@ -137,7 +146,7 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
     
-    num_epochs = 500 # 300 500 600 800
+    num_epochs = 200 # 300 500 600 800
     model_name = dataset_name + "_" + model.__class__.__name__  
 
     print(f"Start training for {num_epochs} epoch")
