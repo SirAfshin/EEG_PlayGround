@@ -328,42 +328,45 @@ class DoubleConv_TSception(nn.Module):
     One layer of conv is Tceptions
     and the other layer is Sception
     '''
-    def conv_block(self, in_chan, out_chan, kernel, step, pool):
+    def conv_block(self, in_chan, out_chan, kernel, step, padding=0):
         return nn.Sequential(
-            nn.Conv2d(in_channels=in_chan, out_channels=out_chan,
-                      kernel_size=kernel, stride=step),
-            nn.LeakyReLU(),
-            nn.AvgPool2d(kernel_size=(1, pool), stride=(1, pool)))
-
-    def __init__(self, in_channels, out_channels):
-        super().__init__()
-        # def __init__(self, num_classes, input_size, sampling_rate, num_T, num_S, hidden, dropout_rate):
-        # input_size: 1 x EEG channel x datapoint
-        super(TSception, self).__init__()
-        self.inception_window = [0.5, 0.25, 0.125]
-        self.pool = 8
-        # by setting the convolutional kernel being (1,lenght) and the strids being 1 we can use conv2d to
-        # achieve the 1d convolution operation
-        self.Tception1 = self.conv_block(1, num_T, (1, int(self.inception_window[0] * sampling_rate)), 1, self.pool)
-        self.Tception2 = self.conv_block(1, num_T, (1, int(self.inception_window[1] * sampling_rate)), 1, self.pool)
-        self.Tception3 = self.conv_block(1, num_T, (1, int(self.inception_window[2] * sampling_rate)), 1, self.pool)
-
-        self.Sception1 = self.conv_block(num_T, num_S, (int(input_size[1]), 1), 1, int(self.pool * 0.25))
-        self.Sception2 = self.conv_block(num_T, num_S, (int(input_size[1] * 0.5), 1), (int(input_size[1] * 0.5), 1),
-                                         int(self.pool * 0.25))
-        self.fusion_layer = self.conv_block(num_S, num_S, (3, 1), 1, 4)
-        self.BN_t = nn.BatchNorm2d(num_T)
-        self.BN_s = nn.BatchNorm2d(num_S)
-        self.BN_fusion = nn.BatchNorm2d(num_S)
-
-        self.fc = nn.Sequential(
-            nn.Linear(num_S, hidden),
-            nn.ReLU(),
-            nn.Dropout(dropout_rate),
-            nn.Linear(hidden, num_classes)
+            nn.Conv2d(
+                in_channels=in_chan, out_channels=out_chan,
+                kernel_size=kernel, stride=step, bias=False, padding=padding),
+            # nn.BatchNorm2d(out_chan),
+            nn.LeakyReLU(inplace=True), # Or maybe relu
         )
 
+    def __init__(self, in_channels, out_channels, num_T, sampling_rate=128, num_channels=14):
+        super().__init__()
+        # def __init__(self, num_classes, input_size, sampling_rate, num_T, num_S, hidden, dropout_rate):
+        self.inception_window = [0.5, 0.25, 0.125]
+        self.pool = 8
+        self.num_S = out_channels
+        # by setting the convolutional kernel being (1,lenght) and the strids being 1 we can use conv2d to
+        # achieve the 1d convolution operation
+        self.Tception1 = self.conv_block(in_channels, num_T, (1, int(self.inception_window[0] * sampling_rate) +1 ), 1, padding='same')
+        self.Tception2 = self.conv_block(in_channels, num_T, (1, int(self.inception_window[1] * sampling_rate) +1 ), 1, padding='same')
+        self.Tception3 = self.conv_block(in_channels, num_T, (1, int(self.inception_window[2] * sampling_rate) +1 ), 1, padding='same')
+
+        self.fuse_T = nn.AvgPool2d((1,3),(1,3))
+
+        self.Sception1 = self.conv_block(num_T, num_T, (int(num_channels), 1), 1 , )
+        self.Sception2 = self.conv_block(num_T, num_T, (int(num_channels * 0.5), 1), (int(num_channels * 0.5), 1), )
+       
+        self.fusion_layer = self.conv_block(num_T, self.num_S, (1, 1), 1)
+       
+        self.adjust_height = nn.Conv2d(in_channels=self.num_S, out_channels=self.num_S,
+                               kernel_size=(4,1), stride=(1,1), padding=(0,0))
+       
+        self.BN_t = nn.BatchNorm2d(num_T)
+        self.BN_s = nn.BatchNorm2d(num_T)
+        self.BN_fusion = nn.BatchNorm2d(self.num_S)
+
+        self.relu = nn.ReLU()
+
     def forward(self, x):
+        # T-Kernels
         y = self.Tception1(x)
         out = y
         y = self.Tception2(x)
@@ -371,19 +374,29 @@ class DoubleConv_TSception(nn.Module):
         y = self.Tception3(x)
         out = torch.cat((out, y), dim=-1)
         out = self.BN_t(out)
+        out = self.relu(out)
+        out = self.fuse_T(out)
+        out1 = out # to use for residual connection
+
+        # S-Kernels
         z = self.Sception1(out)
         out_ = z
         z = self.Sception2(out)
         out_ = torch.cat((out_, z), dim=2)
         out = self.BN_s(out_)
+        out = self.relu(out)
+
+        out = torch.cat((out,out1),dim=2) 
+
+        # Fusion Layer
         out = self.fusion_layer(out)
         out = self.BN_fusion(out)
-        out = torch.squeeze(torch.mean(out, dim=-1), dim=-1)
-        out = self.fc(out)
+        out = self.relu(out)
+        
+        # Adjust channel dim
+        out = self.adjust_height(out)
         return out
          
-    def forward(self, x):
-        pass 
 
 if __name__ == "__main__":
     x = torch.rand(10,1,14,128)
@@ -456,3 +469,18 @@ if __name__ == "__main__":
     print(f"[MultiScaleKernelConvBlock] original: {x.shape}, output: {model(x).shape}")
     print(f"[MultiScaleKernelConv] original: {x.shape}, output: {model2(x).shape}")
     #########################################################################
+
+    print('*'*20)
+    x = torch.rand(10,1,14,128)
+    model = DoubleConv_TSception(1,1,16,128,14)
+    # model = DoubleConv(1,1)
+    # model2 = MultiScaleConv(input_dim= x[0].shape, out_channels=[16,32,64,128], n_classes=2)
+    print(f"Num trainable params: {get_num_trainable_params(model,1)}")
+    print(f"[DoubleConv_TSception] original: {x.shape}, output: {model(x).shape}")
+    print(f"[DoubleConv_TSception] original: {x.shape}, output: {model(model(x)).shape}")
+    # print(f"[MultiScaleKernelConv] original: {x.shape}, output: {model2(x).shape}")
+    #########################################################################
+
+
+
+
