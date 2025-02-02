@@ -127,6 +127,7 @@ if __name__ == "__main__":
     )
 
 
+
     print(f"Selected model name : {model.__class__.__name__}")
     # print(f"Model parameter count: {get_num_params(model,1)}")
     print_var("Model is ", model)
