@@ -41,7 +41,7 @@ from models.cnn_based import UNET_VIT_TSception
 
 if __name__ == "__main__":
     rng_num =  2024 #122
-    batch_size = 32
+    batch_size = 16
 
     dataset_name = 'Dreamer_STFT22'
     emotion_dim = 'valence'  # valence, dominance, or arousal
@@ -122,17 +122,19 @@ if __name__ == "__main__":
     # model = UNET_VIT(
     #     in_channels=dataset[0][0].shape[0], unet_out_channels=3,
     #     img_size=dataset[0][0].shape[1], patch_size=3, 
-    #     n_classes=2, embed_dim=768, depth=5, n_heads=6,
+    #     n_classes=2, embed_dim=256, depth=5, n_heads=8,
     #     mlp_ratio=4., qkv_bias=True, p=0.5, attn_p=0.5
     # )
 
     # Note: Change sampling rate so that the Tsception kernels can have good kernel size 
     # samplig rate /2(4 and 8) + 1 =>  16/2+1 16/4+1 16/8+1 => 9,5,3
+    # num_channel should be the size of stft as well 22
     model = UNET_VIT_TSception(
         in_channels=dataset[0][0].shape[0],unet_out_channels=3,
         img_size=dataset[0][0].shape[1], patch_size=3, 
         n_classes=2, embed_dim=768, depth=5, n_heads=6,
-        mlp_ratio=4., qkv_bias=True, p=0.5, attn_p=0.5
+        mlp_ratio=4., qkv_bias=True, p=0.5, attn_p=0.5,
+        sampling_rate= 16, num_channels=22
     )
 
 
