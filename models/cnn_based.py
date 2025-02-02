@@ -593,6 +593,11 @@ if __name__ == "__main__":
     # samplig rate /2(4 and 8)
     print(f"Trainable param count : {get_num_trainable_params(model,1)}")
     print(f"[UNET_VIT_TSception] original: {x.shape}, output: {model(x).shape}")
-     
+    #########################################################################
 
-
+    print('*'*20)
+    x = torch.rand(10,1,14,128)
+    model = UNET_TSception_classifier(1,3)
+    print(f"Trainable param count : {get_num_trainable_params(model,1)}")
+    print(f"[UNET_TSception_classifier] original: {x.shape}, output: {model(x).shape}")
+    #########################################################################
