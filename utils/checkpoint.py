@@ -430,7 +430,7 @@ def train_validate_test_lrschedule_and_save_(model, dataset_name, model_name, em
 # TODO: Add torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.1)
 # TODO: Also make it so that there is a parameter that lets scheduling to happen
 # tvt = train validate test
-def tvt_save_acc_loss_f1(model, dataset_name, model_name, emotion_dim, train_loader, val_loader, test_loader, optimizer, loss_fn, device, num_epochs=30, is_binary= True, num_classes= None, pre_path='.', en_shcheduler=False):
+def tvt_save_acc_loss_f1(model, dataset_name, model_name, emotion_dim, train_loader, val_loader, test_loader, optimizer, loss_fn, device, num_epochs=30, is_binary= True, num_classes= None, pre_path='.', en_shcheduler=False, step_size=10, gamma=0.1):
     # Create the directory to save data
     save_path, log_path, run_num = create_save_directory(dataset_name, model_name, emotion_dim,pre_path)
     print(log_path)
@@ -452,8 +452,8 @@ def tvt_save_acc_loss_f1(model, dataset_name, model_name, emotion_dim, train_loa
     # Initialize scheduler
     scheduler = None
     if en_shcheduler == True:
-        step_size = 20
-        gamma = 0.1
+        step_size = step_size
+        gamma = gamma
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size, gamma)
         log_handle.info(f"Train model Using Scheduler with step of {step_size} and gamma of {gamma}")
         print(f"Train model Using Scheduler with step of {step_size} and gamma of {gamma}")
