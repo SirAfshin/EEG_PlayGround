@@ -157,7 +157,8 @@ if __name__ == "__main__":
     
     # ****************** Choose your Optimizer ******************************
     # optimizer = optim.Adam(model.parameters(), lr=0.01) # lr = 0.0001  0.001
-    optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.937,weight_decay=1e-5) # TRAIN!
+    # optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.937,weight_decay=1e-5) # TRAIN!
+    optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.937,weight_decay=1e-5) # TRAIN!
 
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -184,7 +185,10 @@ if __name__ == "__main__":
                                                             num_epochs=num_epochs,
                                                             is_binary= False,
                                                             num_classes= 2,
-                                                            en_shcheduler=True) # Enable lr scheduling
+                                                            en_shcheduler=True , # Enable lr scheduling
+                                                            step_size=10,
+                                                            gamma=0.1
+                                                           ) 
 
     
     print("Training process is done!")
