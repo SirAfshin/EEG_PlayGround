@@ -399,9 +399,11 @@ class DoubleConv_TSception(nn.Module):
          
 class UNET_TSception(nn.Module):
     def __init__(self, in_channels=3, out_channels=1, feature_channels=[64,128,256,512], 
-                 num_T=16, sampling_rate= 128, num_channels= 14
+                 num_T=16, sampling_rate= 128, num_channels= 14, pool_en= False
     ):
         super().__init__()
+        self.pool_en= pool_en
+
         self.ups = nn.ModuleList()
         self.downs = nn.ModuleList()
 
@@ -429,7 +431,8 @@ class UNET_TSception(nn.Module):
         for down in self.downs:
             x = down(x)
             skip_connections.append(x)
-            x = self.pool(x) # Remove if using for time data
+            if self.pool_en == True:
+                x = self.pool(x) # Remove if using for time data
 
         x = self.bottleneck(x)
 
@@ -496,6 +499,137 @@ class UNET_VIT_TSception(nn.Module):
         x = self.unet(x)
         x = self.vit(x)
         return x
+
+# ############################# UNET INCEPTION ################################
+
+# [https://www.youtube.com/watch?v=uQc4Fs7yx5I]
+class Inception_Conv_Block(nn.Module):
+    def __init__(self, in_channels, out_channels, **kwargs):
+        super().__init__()
+        self.conv = nn.Conv2d(in_channels, out_channels, bias=False, **kwargs)
+        self.bn = nn.BatchNorm2d(out_channels)
+        self.relu = nn.ReLU()
+
+    def forward(self,x):
+        return self.relu(self.bn(self.conv(x)))
+        
+
+#[https://www.youtube.com/watch?v=uQc4Fs7yx5I]
+class Inception_Block(nn.Module):
+    def __init__(self, in_channels, out_1x1, red_3x3, out_3x3, red_5x5, out_5x5, out_1x1pool):
+        super().__init__()
+
+        self.branch1 = Inception_Conv_Block(in_channels, out_1x1, kernel_size=1)
+        self.branch2 = nn.Sequential(
+            Inception_Conv_Block(in_channels, red_3x3, kernel_size=1),
+            Inception_Conv_Block(red_3x3, out_3x3, kernel_size=3, stride=1, padding=1),
+        )
+        self.branch3 = nn.Sequential(
+            Inception_Conv_Block(in_channels, red_5x5, kernel_size=1),
+            Inception_Conv_Block(red_5x5, out_5x5, kernel_size=5, stride=1, padding=2),
+        )
+        self.branch4 = nn.Sequential(
+            nn.MaxPool2d(kernel_size=3, stride=1, padding=1),
+            Inception_Conv_Block(in_channels, out_1x1pool, kernel_size=1),
+        )
+
+    def forward(self, x):
+        # concat along filters dimension
+        return torch.cat([self.branch1(x), self.branch2(x), self.branch3(x), self.branch4(x)],dim=1) 
+
+class DoubleConv_Inception(nn.Module):
+    def __init__(self, in_channels, out_channels, hid_channels=128 ,red_channels1=32, red_channels2=32):
+        super().__init__()
+        self.layer = nn.Sequential(
+            Inception_Block(in_channels, out_1x1=hid_channels, red_3x3=red_channels1, out_3x3=hid_channels, red_5x5=red_channels1, out_5x5=hid_channels, out_1x1pool=hid_channels),
+            nn.Conv2d(hid_channels*4, hid_channels, kernel_size=1),
+            nn.BatchNorm2d(hid_channels),
+            nn.ReLU(),
+            Inception_Block(in_channels=hid_channels, out_1x1=out_channels, red_3x3=red_channels2, out_3x3=out_channels, red_5x5=red_channels2, out_5x5=out_channels, out_1x1pool=out_channels),
+            nn.Conv2d(out_channels*4, out_channels, kernel_size=1),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(),
+        )
+
+    def forward(self, x):
+        return self.layer(x)
+
+
+class UNET_INCEPTION(nn.Module):
+    def __init__(self, in_channels=3, out_channels=1, feature_channels=[64,128,256,512]):
+        super().__init__()
+        self.ups = nn.ModuleList()
+        self.downs = nn.ModuleList()
+        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
+
+        # Down part of Unet
+        for feature in feature_channels:
+            self.downs.append(DoubleConv_Inception(in_channels, feature))
+            in_channels = feature
+        
+        # Up part of Unet
+        for feature in reversed(feature_channels):
+            self.ups.append(
+                nn.ConvTranspose2d(feature*2, feature, kernel_size=2, stride=2), # *2 is for the concatanation
+            ) # kernel=2 strid=2 -> doubles the height and width of image
+            self.ups.append(DoubleConv_Inception(feature*2, feature))
+
+        self.bottleneck = DoubleConv_Inception(feature_channels[-1], feature_channels[-1]*2)
+        self.final_conv = nn.Conv2d(feature_channels[0], out_channels, kernel_size=1)
+
+    def forward(self,x):
+        skip_connections=[]
+
+        for down in self.downs:
+            x = down(x)
+            skip_connections.append(x)
+            x = self.pool(x)
+
+        x = self.bottleneck(x)
+
+        skip_connections = skip_connections[::-1] # reverse list of skip connections for the decoder part (up)
+
+        for idx in range(0, len(self.ups), 2): # each up and double conv is a single step
+            x = self.ups[idx](x)
+            skip_connection = skip_connections[idx//2]
+
+            if x.shape != skip_connection.shape:
+                x = resize_tensor(x, size=skip_connection.shape[2:])
+
+            concat_skip = torch.cat((skip_connection, x), dim=1) # concatenate along channel dimension (b,channel,h,w)
+            x = self.ups[idx+1](concat_skip)
+
+        x = self.final_conv(x)
+        
+        return x
+
+class UNET_VIT_INCEPTION(nn.Module):
+    '''
+    Important note: embed_dim should be devidable by n_heads
+    => embed_dim % num_heads == 0
+    '''
+    def __init__(self,in_channels=128,unet_out_channels=3,img_size=9, patch_size=3, 
+    n_classes=2,embed_dim=768,depth=5, n_heads=6,mlp_ratio=4.,qkv_bias=True,p=0.5,attn_p=0.5,):
+        super().__init__()
+        self.unet = UNET_INCEPTION(in_channels=in_channels,out_channels=unet_out_channels, feature_channels=[64,128,256,512])
+        self.vit = VisionTransformerEEG(
+            img_size= img_size, # data[b,n_channel,x,x] # x= 17, 22, ...
+            patch_size=patch_size,
+            in_chans=unet_out_channels,
+            n_classes=n_classes,
+            embed_dim=embed_dim,
+            depth=depth,
+            n_heads=n_heads,
+            mlp_ratio=mlp_ratio,
+            qkv_bias=qkv_bias,
+            p=p,
+            attn_p=attn_p,)
+    
+    def forward(self,x):
+        x = self.unet(x)
+        x = self.vit(x)
+        return x
+
 
 
 
@@ -571,33 +705,79 @@ if __name__ == "__main__":
     print(f"[MultiScaleKernelConv] original: {x.shape}, output: {model2(x).shape}")
     #########################################################################
 
-    print('*'*20)
-    x = torch.rand(10,1,14,128)
-    model = DoubleConv_TSception(1,1,16,128,14)
-    # model = DoubleConv(1,1)
-    model2 = UNET_TSception(1,3)
-    print(f"Num trainable params: {get_num_trainable_params(model,1)}")
-    print(f"[DoubleConv_TSception] original: {x.shape}, output: {model(x).shape}")
-    print(f"[DoubleConv_TSception] original: {x.shape}, output: {model(model(x)).shape}")
-    print(f"[UNET_TSception] original: {x.shape}, output: {model2(x).shape}")
-    # print(f"[MultiScaleKernelConv] original: {x.shape}, output: {model2(x).shape}")
+    # print('*'*20)
+    # x = torch.rand(10,1,14,128)
+    # model = DoubleConv_TSception(1,1,16,128,14)
+    # # model = DoubleConv(1,1)
+    # model2 = UNET_TSception(1,3)
+    # print(f"Num trainable params: {get_num_trainable_params(model,1)}")
+    # print(f"[DoubleConv_TSception] original: {x.shape}, output: {model(x).shape}")
+    # print(f"[DoubleConv_TSception] original: {x.shape}, output: {model(model(x)).shape}")
+    # print(f"[UNET_TSception] original: {x.shape}, output: {model2(x).shape}")
+    # # print(f"[MultiScaleKernelConv] original: {x.shape}, output: {model2(x).shape}")
+    #########################################################################
+
+    # print('*'*20)
+    # x = torch.rand(10,14,22,22)
+    # model = UNET_VIT_TSception(
+    #     in_channels=x.shape[1],unet_out_channels=3,img_size=22, patch_size=3, 
+    #     n_classes=2,embed_dim=256,depth=5, n_heads=8,mlp_ratio=4.,qkv_bias=True,p=0.5,attn_p=0.5,
+    #     sampling_rate= 16, num_channels= 22
+    # ) # Change sampling rate so that the Tsception kernels can have good kernel size 
+    # # samplig rate /2(4 and 8)
+    # print(f"Trainable param count : {get_num_trainable_params(model,1)}")
+    # print(f"[UNET_VIT_TSception] original: {x.shape}, output: {model(x).shape}")
+    #########################################################################
+
+    # print('*'*20)
+    # x = torch.rand(10,1,14,128)
+    # model = UNET_TSception_classifier(1,3)
+    # print(f"Trainable param count : {get_num_trainable_params(model,1)}")
+    # print(f"[UNET_TSception_classifier] original: {x.shape}, output: {model(x).shape}")
     #########################################################################
 
     print('*'*20)
     x = torch.rand(10,14,22,22)
-    model = UNET_VIT_TSception(
-        in_channels=x.shape[1],unet_out_channels=3,img_size=22, patch_size=3, 
-        n_classes=2,embed_dim=256,depth=5, n_heads=8,mlp_ratio=4.,qkv_bias=True,p=0.5,attn_p=0.5,
-        sampling_rate= 16, num_channels= 22
-    ) # Change sampling rate so that the Tsception kernels can have good kernel size 
-    # samplig rate /2(4 and 8)
+    model = DoubleConv(14,128)
     print(f"Trainable param count : {get_num_trainable_params(model,1)}")
-    print(f"[UNET_VIT_TSception] original: {x.shape}, output: {model(x).shape}")
+    print(f"[DoubleConv] original: {x.shape}, output: {model(x).shape}")
     #########################################################################
 
     print('*'*20)
-    x = torch.rand(10,1,14,128)
-    model = UNET_TSception_classifier(1,3)
+    x = torch.rand(10,14,22,22)
+    model = DoubleConv_Inception(14,128)
     print(f"Trainable param count : {get_num_trainable_params(model,1)}")
-    print(f"[UNET_TSception_classifier] original: {x.shape}, output: {model(x).shape}")
+    print(f"[DoubleConv_Inception] original: {x.shape}, output: {model(x).shape}")
+    #########################################################################
+
+    print('*'*20)
+    x = torch.rand(10,14,22,22)
+    model = UNET(in_channels=x.shape[1],out_channels=3, feature_channels=[64,128,256,512])
+    print(f"Trainable param count : {get_num_trainable_params(model,1)}")
+    print(f"[UNET] original input: {x.shape}, output: {model(x).shape}")
+    #########################################################################
+
+    print('*'*20)
+    x = torch.rand(10,14,22,22)
+    model = UNET_INCEPTION(in_channels=14, out_channels=3, feature_channels=[64,128,256,512])
+    print(f"Trainable param count : {get_num_trainable_params(model,1)}")
+    print(f"[UNET_INCEPTION] original: {x.shape}, output: {model(x).shape}")
+    #########################################################################
+
+    print('*'*20)
+    x = torch.rand(10,14,22,22)
+    model = UNET_VIT(
+        in_channels=14, unet_out_channels=3, img_size=22, patch_size=3, n_classes=2, 
+        embed_dim=768, depth=5, n_heads=6, mlp_ratio=4.0, qkv_bias=True, p=0.5, attn_p=0.5)
+    print(f"Trainable param count : {get_num_trainable_params(model,1)}")
+    print(f"[UNET_VIT] original: {x.shape}, output: {model(x).shape}")
+    #########################################################################
+
+    print('*'*20)
+    x = torch.rand(10,14,22,22)
+    model = UNET_VIT_INCEPTION(
+        in_channels=14, unet_out_channels=3, img_size=22, patch_size=3, n_classes=2, 
+        embed_dim=768, depth=5, n_heads=6, mlp_ratio=4.0, qkv_bias=True, p=0.5, attn_p=0.5)
+    print(f"Trainable param count : {get_num_trainable_params(model,1)}")
+    print(f"[UNET_VIT_INCEPTION] original: {x.shape}, output: {model(x).shape}")
     #########################################################################
