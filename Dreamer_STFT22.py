@@ -37,7 +37,7 @@ from utils.transforms import STFTSpectrogram
 from models.STFT_Spectrogram.stft_cnn import STFT_Two_Layer_CNN_Pro, STFT_Three_Layer_CNN_Pro
 from models.STFT_Spectrogram.stft_cnn_lstm import STFT_LSTM_CNN_Model
 from models.cnn_based import  UNET_VIT
-from models.cnn_based import UNET_VIT_TSception
+from models.cnn_based import UNET_VIT_TSception, UNET_VIT_INCEPTION
 
 if __name__ == "__main__":
     rng_num =  2024 #122
@@ -118,13 +118,13 @@ if __name__ == "__main__":
     #     mlp_ratio=4., qkv_bias=True, p=0.5, attn_p=0.5
     # )
 
-    # UNET_VIT model 2 -> tHis is a good model !!!!!!!!
-    model = UNET_VIT(
-        in_channels=dataset[0][0].shape[0], unet_out_channels=3,
-        img_size=dataset[0][0].shape[1], patch_size=5, 
-        n_classes=2, embed_dim=256, depth=5, n_heads=8, # depth=5
-        mlp_ratio=4., qkv_bias=True, p=0.5, attn_p=0.5 # mlp_ratio=4.
-    )
+    # # UNET_VIT model 2 -> tHis is a good model !!!!!!!! !!!!!!!!!!!
+    # model = UNET_VIT(
+    #     in_channels=dataset[0][0].shape[0], unet_out_channels=3,
+    #     img_size=dataset[0][0].shape[1], patch_size=5, 
+    #     n_classes=2, embed_dim=256, depth=5, n_heads=8, # depth=5
+    #     mlp_ratio=4., qkv_bias=True, p=0.5, attn_p=0.5 # mlp_ratio=4.
+    # )
 
     # Note: Change sampling rate so that the Tsception kernels can have good kernel size 
     # samplig rate /2(4 and 8) + 1 =>  16/2+1 16/4+1 16/8+1 => 9,5,3
@@ -136,6 +136,13 @@ if __name__ == "__main__":
     #     mlp_ratio=4., qkv_bias=True, p=0.5, attn_p=0.5,
     #     sampling_rate= 16, num_channels=22
     # )
+
+    model = UNET_VIT_INCEPTION(
+        in_channels=dataset[0][0].shape[0], unet_out_channels=3, 
+        img_size=dataset[0][0].shape[1], patch_size=3, n_classes=2, 
+        embed_dim=768, depth=5, n_heads=6, mlp_ratio=4.0, qkv_bias=True, 
+        p=0.5, attn_p=0.5)
+
 
 
     print(f"Selected model name : {model.__class__.__name__}")
