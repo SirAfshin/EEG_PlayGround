@@ -183,7 +183,8 @@ if __name__ == "__main__":
                                                             device, 
                                                             num_epochs=num_epochs,
                                                             is_binary= False,
-                                                            num_classes= 2)
+                                                            num_classes= 2,
+                                                            en_shcheduler=True) # Enable lr scheduling
 
     
     print("Training process is done!")
