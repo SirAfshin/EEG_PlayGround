@@ -41,7 +41,7 @@ from models.cnn_based import UNET_VIT_TSception, UNET_VIT_INCEPTION
 
 if __name__ == "__main__":
     rng_num =  2024 #122
-    batch_size = 16
+    batch_size = 256
 
     dataset_name = 'Dreamer_STFT22'
     emotion_dim = 'valence'  # valence, dominance, or arousal
@@ -140,7 +140,7 @@ if __name__ == "__main__":
     model = UNET_VIT_INCEPTION(
         in_channels=dataset[0][0].shape[0], unet_out_channels=3, 
         img_size=dataset[0][0].shape[1], patch_size=3, n_classes=2, 
-        embed_dim=768, depth=5, n_heads=6, mlp_ratio=4.0, qkv_bias=True, 
+        embed_dim=128, depth=5, n_heads=8, mlp_ratio=4.0, qkv_bias=True,  # embed_dim=768, n_heads=6
         p=0.5, attn_p=0.5)
 
 
