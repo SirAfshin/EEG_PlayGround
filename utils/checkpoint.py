@@ -427,9 +427,10 @@ def train_validate_test_lrschedule_and_save_(model, dataset_name, model_name, em
     return loss_hist, acc_hist, loss_val_hist, acc_val_hist, loss_test, acc_test
 
 
-# TODO: test phase should be performed on the 2 best models saved!
+# TODO: Add torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.1)
+# TODO: Also make it so that there is a parameter that lets scheduling to happen
 # tvt = train validate test
-def tvt_save_acc_loss_f1(model, dataset_name, model_name, emotion_dim, train_loader, val_loader, test_loader, optimizer, loss_fn, device, num_epochs=30, is_binary= True, num_classes= None, pre_path='.'):
+def tvt_save_acc_loss_f1(model, dataset_name, model_name, emotion_dim, train_loader, val_loader, test_loader, optimizer, loss_fn, device, num_epochs=30, is_binary= True, num_classes= None, pre_path='.', en_shcheduler=False):
     # Create the directory to save data
     save_path, log_path, run_num = create_save_directory(dataset_name, model_name, emotion_dim,pre_path)
     print(log_path)
@@ -448,6 +449,14 @@ def tvt_save_acc_loss_f1(model, dataset_name, model_name, emotion_dim, train_loa
     except:
         pass
 
+    # Initialize scheduler
+    scheduler = None
+    if en_shcheduler == True:
+        step_size = 30
+        gamma = 0.1
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size, gamma)
+        log_handle.info(f"Train model Using Scheduler with step of {step_size} and gamma of {gamma}")
+        print(f"Train model Using Scheduler with step of {step_size} and gamma of {gamma}")
 
     # Lists to store loss and accuracy values
     loss_hist = []
@@ -493,6 +502,11 @@ def tvt_save_acc_loss_f1(model, dataset_name, model_name, emotion_dim, train_loa
             print(f"New best model saved with Acc {acc_val:.4f} at epoch {epoch}")
 
         
+        if en_shcheduler == True:
+            scheduler.step()
+            log_handle.info(f"Lerning rate updated because of scheduler, lr={optimizer.param_groups[0]['lr']}")
+            print(f"Lerning rate updated because of scheduler, lr={optimizer.param_groups[0]['lr']}")
+
         # save acc and loss plot each 50 epochs
         if epoch % 10 == 0  and epoch != 0:
             save_training_plots(loss_hist, acc_hist, save_path)
