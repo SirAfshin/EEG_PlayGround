@@ -535,7 +535,7 @@ class BandPassFilterEEG(EEGTransform):
 
 if __name__ == "__main__":
     t = STFTSpectrogram_baseline(n_fft=64, hop_length=4, apply_to_baseline=True)
-    output = t(eeg=np.random.randn(32, 128), baseline=np.random.randn(32, 128))
+    output = t(eeg=np.random.randn(1,32, 128), baseline=np.random.randn(1,32, 128))
 
     print(output["eeg"].shape)      # Expected: (32, num_frequencies, num_time_steps)
     print(output["baseline"].shape) # Expected: (32, num_frequencies, num_time_steps) if baseline is provided
