@@ -153,8 +153,8 @@ if __name__ == "__main__":
     loss_fn = nn.CrossEntropyLoss()
     
     # ****************** Choose your Optimizer ******************************
-    optimizer = optim.Adam(model.parameters(), lr=0.001) # lr = 0.0001  0.001
-    # optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.937)
+    # optimizer = optim.Adam(model.parameters(), lr=0.001) # lr = 0.0001  0.001
+    optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.937)
 
 
     # ********************** Set The Device ***************************************
@@ -163,7 +163,7 @@ if __name__ == "__main__":
     
 
     num_epochs = 2  # 300 500 600 800
-    model_name = "Dreamer_" + model.__class__.__name__ + "_Time_To2d" # _Time_To2d_b
+    model_name = dataset_name + "_" + model.__class__.__name__ 
 
     print(f"Start training for {num_epochs} epoch")
 
