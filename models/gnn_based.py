@@ -389,6 +389,16 @@ class LGGNet(nn.Module):
         return adj
 
 if __name__ == "__main__":
+    x = torch.rand(10,14,22,22)
+    model = DGCNN(in_channels= 14,
+                  num_electrodes= 14,
+                  num_layers= 2,
+                  hid_channels= 32,
+                  num_classes= 2)
+    print(f"original: {x.shape}, output: {model(x).shape}")
+
+    ################################################################
+
     from torch.utils.data import DataLoader, TensorDataset
     device = 'cpu'
     x = torch.randn(100,32,5)
