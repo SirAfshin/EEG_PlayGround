@@ -36,7 +36,7 @@ from utils.transforms import STFTSpectrogram
 
 from models.STFT_Spectrogram.stft_cnn import STFT_Two_Layer_CNN_Pro, STFT_Three_Layer_CNN_Pro
 from models.STFT_Spectrogram.stft_cnn_lstm import STFT_LSTM_CNN_Model
-from models.cnn_based import  UNET_VIT
+from models.cnn_based import  UNET_VIT, UNET_VIT_INCEPTION
 
 
 if __name__ == "__main__":
@@ -111,12 +111,18 @@ if __name__ == "__main__":
     # model = STFT_Three_Layer_CNN_Pro()
     # model = STFT_LSTM_CNN_Model()
 
-    model = UNET_VIT(
-        in_channels=dataset[0][0].shape[0], unet_out_channels=3,
-        img_size=dataset[0][0].shape[1], patch_size=3, 
-        n_classes=2, embed_dim=768, depth=5, n_heads=6,
-        mlp_ratio=4., qkv_bias=True, p=0.5, attn_p=0.5
-    )
+    # model = UNET_VIT(
+    #     in_channels=dataset[0][0].shape[0], unet_out_channels=3,
+    #     img_size=dataset[0][0].shape[1], patch_size=3, 
+    #     n_classes=2, embed_dim=768, depth=5, n_heads=6,
+    #     mlp_ratio=4., qkv_bias=True, p=0.5, attn_p=0.5
+    # )
+
+    model = UNET_VIT_INCEPTION(
+        in_channels=dataset[0][0].shape[0], unet_out_channels=3, 
+        img_size=dataset[0][0].shape[1], patch_size=3, n_classes=2, 
+        embed_dim=128, depth=5, n_heads=8, mlp_ratio=4.0, qkv_bias=True,  # embed_dim=768, n_heads=6
+        p=0.5, attn_p=0.5)
 
 
     print(f"Selected model name : {model.__class__.__name__}")
@@ -157,7 +163,10 @@ if __name__ == "__main__":
                                                             device, 
                                                             num_epochs=num_epochs,
                                                             is_binary= False,
-                                                            num_classes= 2)
+                                                            num_classes= 2,
+                                                            en_shcheduler=False , # Enable lr scheduling
+                                                            step_size=[5,20,30],
+                                                            gamma=0.1)
 
     
     print("Training process is done!")

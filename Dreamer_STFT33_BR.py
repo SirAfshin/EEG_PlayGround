@@ -156,8 +156,8 @@ if __name__ == "__main__":
     loss_fn = nn.CrossEntropyLoss()
     
     # ****************** Choose your Optimizer ******************************
-    # optimizer = optim.Adam(model.parameters(), lr=0.01) # lr = 0.0001  0.001
-    optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.937,weight_decay=1e-5) # TRAIN!
+    optimizer = optim.Adam(model.parameters(), lr=0.01) # lr = 0.0001  0.001
+    # optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.937,weight_decay=1e-5) # TRAIN!
     # optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.937,weight_decay=1e-5) # SCHEDULE!
 
 
