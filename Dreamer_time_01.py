@@ -138,7 +138,7 @@ if __name__ == "__main__":
 
     model = UNET_TSception_classifier(
         in_channels=1, out_channels=3, feature_channels=[64,128,256,512], num_T=16, sampling_rate=128, num_channels=14, n_classes=2
-    ) # Not that good of a model
+    ) # Not that good of a model=? HEavy to run
 
 
 
