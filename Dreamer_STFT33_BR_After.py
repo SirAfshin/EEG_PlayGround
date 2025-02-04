@@ -54,10 +54,10 @@ if __name__ == "__main__":
                             mat_path=mat_path,
                             offline_transform=transforms.Compose([
                                 STFTSpectrogram_baseline(n_fft=64, hop_length=4, contourf=False, apply_to_baseline=True), # [batch,14, 33, 33]
-                                transforms.MeanStdNormalize(),#MeanStdNormalize() , MinMaxNormalize()
+                                transforms.MeanStdNormalize(apply_to_baseline=True),#MeanStdNormalize() , MinMaxNormalize()
+                                 transforms.BaselineRemoval(),
                             ]),
                             online_transform=transforms.Compose([
-                                transforms.BaselineRemoval(),
                                 transforms.ToTensor(),
                             ]),
                             label_transform=transforms.Compose([
