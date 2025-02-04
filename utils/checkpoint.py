@@ -505,9 +505,9 @@ def tvt_save_acc_loss_f1(model, dataset_name, model_name, emotion_dim, train_loa
         
         if en_shcheduler == True:
             scheduler.step()
-        if (epoch+1) % step_size == 0 :
-            log_handle.info(f"Lerning rate updated because of scheduler, lr={optimizer.param_groups[0]['lr']}")
-            print(f"Lerning rate updated because of scheduler, lr={optimizer.param_groups[0]['lr']}")
+            if (epoch+1) in step_size :
+                log_handle.info(f"Lerning rate updated because of scheduler, lr={optimizer.param_groups[0]['lr']}")
+                print(f"Lerning rate updated because of scheduler, lr={optimizer.param_groups[0]['lr']}")
 
         # save acc and loss plot each 50 epochs
         if epoch % 10 == 0  and epoch != 0:

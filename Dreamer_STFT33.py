@@ -41,7 +41,7 @@ from models.cnn_based import UNET_VIT_TSception, UNET_VIT_INCEPTION
 
 if __name__ == "__main__":
     rng_num =  2024 #122
-    batch_size = 64
+    batch_size = 32
 
     dataset_name = 'Dreamer_STFT33'
     emotion_dim = 'valence'  # valence, dominance, or arousal
