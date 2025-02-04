@@ -454,7 +454,8 @@ def tvt_save_acc_loss_f1(model, dataset_name, model_name, emotion_dim, train_loa
     if en_shcheduler == True:
         step_size = step_size
         gamma = gamma
-        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size, gamma)
+        # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size, gamma)
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=step_size, gamma=gamma)
         log_handle.info(f"Train model Using Scheduler with step of {step_size} and gamma of {gamma}")
         print(f"Train model Using Scheduler with step of {step_size} and gamma of {gamma}")
 

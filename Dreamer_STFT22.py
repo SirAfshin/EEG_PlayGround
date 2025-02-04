@@ -186,7 +186,7 @@ if __name__ == "__main__":
                                                             is_binary= False,
                                                             num_classes= 2,
                                                             en_shcheduler=True , # Enable lr scheduling
-                                                            step_size=10,
+                                                            step_size=[5,20,30],
                                                             gamma=0.1
                                                            ) 
 
