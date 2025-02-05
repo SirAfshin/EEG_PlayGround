@@ -18,7 +18,7 @@ This repositry contains codes and datasets for eeg emotion detection.
 - https://github.com/hazdzz/ChebyNet/tree/main/model
 -
 - Why Baseline Correction [https://neuro.inf.unibe.ch/AlgorithmsNeuroscience/Tutorial_files/BaselineCorrection.html]
--
+- https://www.youtube.com/watch?v=2wS7-XILNso
 -
 -
 
