@@ -159,7 +159,7 @@ if __name__ == "__main__":
     loss_fn = nn.CrossEntropyLoss()
     
     # ****************** Choose your Optimizer ******************************
-    # optimizer = optim.Adam(model.parameters(), lr=0.01) # lr = 0.0001  0.001
+    # optimizer = optim.Adam(model.parameters(), lr=0.001) # lr = 0.0001  0.001
     optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.937,weight_decay=1e-5) # TRAIN!
     # optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.937,weight_decay=1e-5) # SCHEDULE!
 
@@ -167,7 +167,7 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
     
-    num_epochs = 50 # 300 500 600 800
+    num_epochs = 200 # 300 500 600 800
     model_name = dataset_name + "_" + model.__class__.__name__  
 
     print(f"Start training for {num_epochs} epoch")
