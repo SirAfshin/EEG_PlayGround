@@ -145,7 +145,12 @@ if __name__ == "__main__":
     #     embed_dim=128, depth=5, n_heads=8, mlp_ratio=4.0, qkv_bias=True,  # embed_dim=768, n_heads=6
     #     p=0.5, attn_p=0.5)
 
-    model = UNET_DGCNN_INCEPTION2(in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], graph_feature_size=5, n_classes=2)
+    # model = UNET_DGCNN_INCEPTION2(in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], graph_feature_size=5, n_classes=2)
+    model = UNET_DGCNN_INCEPTION2(in_channels=dataset[0][0].shape[0], 
+                                  unet_feature_channels=[64,128,256,512,1024], 
+                                  graph_feature_size=5,
+                                  dgcnn_layers=4, 
+                                  n_classes=2)
 
 
     print(f"Selected model name : {model.__class__.__name__}")

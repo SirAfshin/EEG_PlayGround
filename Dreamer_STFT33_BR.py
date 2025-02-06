@@ -187,8 +187,8 @@ if __name__ == "__main__":
                                                             num_epochs=num_epochs,
                                                             is_binary= False,
                                                             num_classes= 2,
-                                                            en_shcheduler=False , # Enable lr scheduling
-                                                            step_size=[5,20,30],
+                                                            en_shcheduler=True , # Enable lr scheduling
+                                                            step_size=[14],
                                                             gamma=0.1
                                                            ) 
 
