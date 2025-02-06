@@ -38,7 +38,7 @@ from models.STFT_Spectrogram.stft_cnn import STFT_Two_Layer_CNN_Pro, STFT_Three_
 from models.STFT_Spectrogram.stft_cnn_lstm import STFT_LSTM_CNN_Model
 from models.cnn_based import  UNET_VIT
 from models.cnn_based import UNET_VIT_TSception, UNET_VIT_INCEPTION
-from models.resnet_dgcnn_test import *
+from models.the_model import *
 
 
 if __name__ == "__main__":

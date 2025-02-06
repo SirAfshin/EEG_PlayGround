@@ -44,7 +44,7 @@ if __name__ == "__main__":
     rng_num =  2024 #122
     batch_size = 32
 
-    dataset_name = 'DEAP_STFT33'
+    dataset_name = 'DEAP_STFT33_BR_Before'
     emotion_dim = 'valence'  # valence, dominance, or arousal
     
     root_path = './raw_data/DEAP'
@@ -54,7 +54,7 @@ if __name__ == "__main__":
     dataset = DEAPDataset(io_path=f"{io_path}",
                             root_path=root_path,
                             offline_transform=transforms.Compose([
-                                # transforms.BaselineRemoval(),
+                                transforms.BaselineRemoval(),
                                 STFTSpectrogram(n_fft=64, hop_length=4, contourf=False, apply_to_baseline=True), # [batch,14, 33, 33]
                                 transforms.MeanStdNormalize(apply_to_baseline=True),#MeanStdNormalize() , MinMaxNormalize()
                                 # transforms.BaselineRemoval(),
@@ -148,7 +148,7 @@ if __name__ == "__main__":
     # Good model, 6M ,val:%83
     # model = UNET_DGCNN_INCEPTION(in_channels=dataset[0][0].shape[0], unet_out_channels=3, unet_feature_channels=[64,128,256], n_classes=2)
 
-    model = UNET_DGCNN_INCEPTION2(in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], graph_feature_size=5, n_classes=2)
+    model = UNET_DGCNN_INCEPTION2(in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], graph_feature_size=5, dgcnn_layers=2, n_classes=2)
 
     print(f"Selected model name : {model.__class__.__name__}")
     # print(f"Model parameter count: {get_num_params(model,1)}")
