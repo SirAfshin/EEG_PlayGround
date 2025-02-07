@@ -148,7 +148,9 @@ if __name__ == "__main__":
     # Good model, 6M ,val:%83
     # model = UNET_DGCNN_INCEPTION(in_channels=dataset[0][0].shape[0], unet_out_channels=3, unet_feature_channels=[64,128,256], n_classes=2)
 
+    # val:84.58%
     model = UNET_DGCNN_INCEPTION2(in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], graph_feature_size=5, dgcnn_layers=2, n_classes=2)
+    # model = UNET_DGCNN_INCEPTION2(in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256,512], graph_feature_size=10, dgcnn_layers=10, n_classes=2)
 
     print(f"Selected model name : {model.__class__.__name__}")
     # print(f"Model parameter count: {get_num_params(model,1)}")
@@ -190,7 +192,7 @@ if __name__ == "__main__":
                                                             num_epochs=num_epochs,
                                                             is_binary= False,
                                                             num_classes= 2,
-                                                            en_shcheduler=False , # Enable lr scheduling
+                                                            en_shcheduler=True , # Enable lr scheduling
                                                             step_size=[10], #15
                                                             gamma=0.1
                                                            ) 
