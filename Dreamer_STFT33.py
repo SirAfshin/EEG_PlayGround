@@ -149,8 +149,11 @@ if __name__ == "__main__":
     # Good model, 6M ,val:%83
     # model = UNET_DGCNN_INCEPTION(in_channels=dataset[0][0].shape[0], unet_out_channels=3, unet_feature_channels=[64,128,256], n_classes=2)
 
-    model = UNET_DGCNN_INCEPTION2(in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], graph_feature_size=5, n_classes=2)
+    # model = UNET_DGCNN_INCEPTION2(in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], graph_feature_size=5, n_classes=2)
 
+    model = UNET_DGCNN_INCEPTION_GAT(in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], graph_feature_size=5, dgcnn_layers=2, dgcnn_hid_channels=32, n_classes=2, dropout=0.5, bias=True)
+
+    
     print(f"Selected model name : {model.__class__.__name__}")
     # print(f"Model parameter count: {get_num_params(model,1)}")
     print_var("Model is ", model)
