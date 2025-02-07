@@ -19,8 +19,14 @@ This repositry contains codes and datasets for eeg emotion detection.
 -
 - Why Baseline Correction [https://neuro.inf.unibe.ch/AlgorithmsNeuroscience/Tutorial_files/BaselineCorrection.html]
 - https://www.youtube.com/watch?v=2wS7-XILNso
+- Graph NN Theory [https://www.youtube.com/@FedericoBarbero00/]
+- GAT NN [https://www.youtube.com/watch?v=iAEDA8aDCZg]
+- GCN [https://medium.com/@jrosseruk/demystifying-gcns-a-step-by-step-guide-to-building-a-graph-convolutional-network-layer-in-pytorch-09bf2e788a51]
+- 
 -
--
+
+
+
 
 
 
