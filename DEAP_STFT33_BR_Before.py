@@ -152,6 +152,12 @@ if __name__ == "__main__":
     model = UNET_DGCNN_INCEPTION2(in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], graph_feature_size=5, dgcnn_layers=2, n_classes=2)
     # model = UNET_DGCNN_INCEPTION2(in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256,512], graph_feature_size=10, dgcnn_layers=10, n_classes=2)
 
+    model = UNET_DGCNN_INCEPTION_GAT(in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], graph_feature_size=5, dgcnn_layers=2, dgcnn_hid_channels=32, n_classes=2, dropout=0.5, bias=True)
+   
+    # Not good
+    # model = UNET_DGCNN_INCEPTION_GAT(in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256,512], graph_feature_size=5, dgcnn_layers=5, dgcnn_hid_channels=64, n_classes=2, dropout=0.6, bias=True)
+
+
     print(f"Selected model name : {model.__class__.__name__}")
     # print(f"Model parameter count: {get_num_params(model,1)}")
     print_var("Model is ", model)
@@ -192,7 +198,7 @@ if __name__ == "__main__":
                                                             num_epochs=num_epochs,
                                                             is_binary= False,
                                                             num_classes= 2,
-                                                            en_shcheduler=True , # Enable lr scheduling
+                                                            en_shcheduler=False , # Enable lr scheduling
                                                             step_size=[10], #15
                                                             gamma=0.1
                                                            ) 
