@@ -13,6 +13,59 @@ from torch.nn.parameter import Parameter
 
 from utils.utils import get_num_trainable_params
 
+#DFCNN with GATConv with multi head attetion
+class GraphConvAttention_Multi_Head(nn.Module):
+    def __init__(self, node_dim, in_channels, out_channels, heads=4, dropout=0.0, bias=False):
+        super(GraphConvAttention_Multi_Head, self).__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels 
+        self.dropout = dropout
+        
+        # Initialise the weight matrix as a parameter
+        self.W_alphas = nn.Parameter(torch.rand(in_channels, node_dim)) # (d x n)
+        self.W = nn.Parameter(torch.rand(in_channels, out_channels)) # (d x d')
+        nn.init.xavier_normal_(self.W_alphas)
+        nn.init.xavier_normal_(self.W)
+        self.bias = None
+        if bias:
+            self.bias = nn.Parameter(torch.FloatTensor(self.out_channels))
+            nn.init.zeros_(self.bias)
+
+    def forward(self, x, adj):
+        D_neg, A_hat = self.update_adj_d(adj)
+
+        alphas = torch.matmul(D_neg, torch.matmul(x, self.W_alphas))
+        alphas = nn.functional.leaky_relu(alphas)
+        alphas = nn.functional.softmax(alphas, dim=-2) # dim = -1 ???? is it OK
+        alphas = nn.functional.dropout(alphas, self.dropout, training=self.training)
+
+        out = torch.matmul(A_hat, x)  # Feature propagation
+        out = torch.matmul(alphas, out)  # Apply attention coefficients
+        out = torch.matmul(out, self.W)
+        out = nn.functional.relu(out)
+        if self.bias is not None:
+            out = out + self.bias
+            
+        return out
+       
+    def update_adj_d(self, adj):
+        # A_hat = A + I (adding self-loops)
+        A_hat = adj + torch.eye(adj.size(-1), device=adj.device)
+
+        # Compute the degree matrix D
+        D = torch.sum(A_hat, dim=-1)  # Sum along last dimension to get degrees
+
+        # Create D^{-1}
+        D_inv = torch.pow(D + 1e-8, -1.0)  # Add epsilon to avoid division by zero
+        D_inv = torch.diag_embed(D_inv)  # Convert to diagonal matrix
+
+        return D_inv , A_hat   
+
+
+
+
+
+
 # DGCNN with GATConv
 class GraphConvAttention(nn.Module):
     def __init__(self, node_dim, in_channels, out_channels, dropout=0.0, bias=False):
@@ -128,7 +181,8 @@ class DGCNN_ATTENTION(nn.Module):
                  hid_channels= 32,
                  num_classes= 2,
                  dropout=0.5,
-                 bias=False):
+                 bias=False,
+                 linear_hid=64):
 
         super(DGCNN_ATTENTION, self).__init__()
         self.in_channels = in_channels
@@ -139,7 +193,7 @@ class DGCNN_ATTENTION(nn.Module):
 
         self.layer1 = Chebynet_ATTENTION(in_channels= in_channels, num_layers=num_layers, out_channels=hid_channels, node_dim=num_electrodes, dropout=dropout, bias=bias)
         self.BN1 = nn.BatchNorm1d(in_channels)
-        self.fc1 = Linear(num_electrodes * hid_channels, 64)
+        self.fc1 = Linear(num_electrodes * hid_channels, linear_hid)
         self.fc2 = Linear(64, num_classes)
         self.A = nn.Parameter(torch.FloatTensor(num_electrodes, num_electrodes))
         nn.init.xavier_normal_(self.A)
