@@ -194,7 +194,7 @@ class DGCNN_ATTENTION(nn.Module):
         self.layer1 = Chebynet_ATTENTION(in_channels= in_channels, num_layers=num_layers, out_channels=hid_channels, node_dim=num_electrodes, dropout=dropout, bias=bias)
         self.BN1 = nn.BatchNorm1d(in_channels)
         self.fc1 = Linear(num_electrodes * hid_channels, linear_hid)
-        self.fc2 = Linear(64, num_classes)
+        self.fc2 = Linear(linear_hid, num_classes)
         self.A = nn.Parameter(torch.FloatTensor(num_electrodes, num_electrodes))
         nn.init.xavier_normal_(self.A)
 
