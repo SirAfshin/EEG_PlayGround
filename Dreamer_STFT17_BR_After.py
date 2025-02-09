@@ -45,7 +45,7 @@ if __name__ == "__main__":
     rng_num =  2024 #122
     batch_size = 32
 
-    dataset_name = 'Dreamer_STFT33_BR_After'
+    dataset_name = 'Dreamer_STFT17_BR_After'
     emotion_dim = 'valence'  # valence, dominance, or arousal
     
     mat_path = './raw_data/DREAMER.mat'  # path to the DREAMER.mat file
