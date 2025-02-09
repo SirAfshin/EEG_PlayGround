@@ -13,54 +13,65 @@ from torch.nn.parameter import Parameter
 
 from utils.utils import get_num_trainable_params
 
-#DFCNN with GATConv with multi head attetion
+#DGCNN with GATConv with multi head attetion
 class GraphConvAttention_Multi_Head(nn.Module):
-    def __init__(self, node_dim, in_channels, out_channels, heads=4, dropout=0.0, bias=False):
+    def __init__(self, node_dim, in_channels, out_channels, num_heads=4, dropout=0.0, bias=False):
         super(GraphConvAttention_Multi_Head, self).__init__()
         self.in_channels = in_channels
-        self.out_channels = out_channels 
+        self.out_channels = out_channels // num_heads  # Output dim per head
+        self.num_heads = num_heads
         self.dropout = dropout
         
-        # Initialise the weight matrix as a parameter
-        self.W_alphas = nn.Parameter(torch.rand(in_channels, node_dim)) # (d x n)
-        self.W = nn.Parameter(torch.rand(in_channels, out_channels)) # (d x d')
+        # Multi-head attention parameters
+        self.W_alphas = nn.Parameter(torch.rand(num_heads, in_channels, node_dim))  # (h, d, n)
+        self.W = nn.Parameter(torch.rand(num_heads, in_channels, self.out_channels))  # (h, d, d')
+        
         nn.init.xavier_normal_(self.W_alphas)
         nn.init.xavier_normal_(self.W)
+        
         self.bias = None
         if bias:
-            self.bias = nn.Parameter(torch.FloatTensor(self.out_channels))
+            self.bias = nn.Parameter(torch.FloatTensor(out_channels))
             nn.init.zeros_(self.bias)
+    
+    def update_adj_d(self, adj):
+        """ Compute the degree matrix and normalized adjacency matrix """
+        A_hat = adj+ torch.eye(adj.size(-1), device= adj.device)
+        # D = torch.sum(adj, dim=-1, keepdim=True)  # Degree matrix (sum of rows)
+        D = torch.sum(adj, dim=-1)  # Degree matrix (sum of rows)
+       
+        D_neg = torch.pow(D, -1.0) # D^(-1.0)
+        # D_neg = torch.pow(D, -0.5)  # D^(-0.5)
 
+        D_neg[D_neg == float('inf')] = 0  # Handle divide by zero
+        D_neg = torch.diag_embed(D_neg)
+        
+        # A_hat = D_neg * A_hat * D_neg  # Normalized adjacency matrix
+        
+        return D_neg, A_hat
+    
     def forward(self, x, adj):
         D_neg, A_hat = self.update_adj_d(adj)
-
-        alphas = torch.matmul(D_neg, torch.matmul(x, self.W_alphas))
-        alphas = nn.functional.leaky_relu(alphas)
-        alphas = nn.functional.softmax(alphas, dim=-2) # dim = -1 ???? is it OK
-        alphas = nn.functional.dropout(alphas, self.dropout, training=self.training)
-
-        out = torch.matmul(A_hat, x)  # Feature propagation
-        out = torch.matmul(alphas, out)  # Apply attention coefficients
-        out = torch.matmul(out, self.W)
-        out = nn.functional.relu(out)
+        
+        multi_head_out = []
+        for i in range(self.num_heads):
+            alphas = torch.matmul(D_neg, torch.matmul(x, self.W_alphas[i]))  # (N, n)
+            alphas = F.leaky_relu(alphas)
+            alphas = F.softmax(alphas, dim=-2)
+            alphas = F.dropout(alphas, self.dropout, training=self.training)
+            
+            out = torch.matmul(A_hat, x)  # Feature propagation
+            out = torch.matmul(alphas, out)  # Apply attention coefficients
+            out = torch.matmul(out, self.W[i])  # Transform features
+            out = F.relu(out)
+            multi_head_out.append(out)
+        
+        out = torch.cat(multi_head_out, dim=-1)  # Concatenate across heads
+        
         if self.bias is not None:
             out = out + self.bias
             
         return out
-       
-    def update_adj_d(self, adj):
-        # A_hat = A + I (adding self-loops)
-        A_hat = adj + torch.eye(adj.size(-1), device=adj.device)
-
-        # Compute the degree matrix D
-        D = torch.sum(A_hat, dim=-1)  # Sum along last dimension to get degrees
-
-        # Create D^{-1}
-        D_inv = torch.pow(D + 1e-8, -1.0)  # Add epsilon to avoid division by zero
-        D_inv = torch.diag_embed(D_inv)  # Convert to diagonal matrix
-
-        return D_inv , A_hat   
-
 
 
 
@@ -620,4 +631,12 @@ if __name__ == "__main__":
     print('*'*100)
     ################################################################################################
     
+    model = GraphConvAttention_Multi_Head(node_dim=14,in_channels=5,out_channels=44,num_heads=4,dropout=0.5,bias=True)
+    x = torch.rand(10,14,5)
+    adj = torch.rand(10,14,14)
+    print(f"Num trainable params: {get_num_trainable_params(model,1)}")
+    print(f"[GraphConvAttention_Multi_Head] original: {x.shape},  output: {model(x,adj).shape}")
+    print('*'*100)
+    ################################################################################################
     
+
