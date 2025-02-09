@@ -11,6 +11,7 @@ import torch
 import matplotlib.pyplot as plt
 import torch.optim as optim
 from sklearn.metrics import  f1_score
+from sklearn.metrics import precision_score, recall_score, confusion_matrix
 
 from utils.utils import get_num_params, train_one_step_tqdm , validation_with_tqdm
 from utils.utils import train_one_step_tqdm_withF1, validation_with_tqdm_withF1
