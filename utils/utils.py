@@ -11,7 +11,7 @@ from torchmetrics.classification import BinaryAccuracy
 from tqdm import tqdm
 import re
 from sklearn.metrics import confusion_matrix, accuracy_score, f1_score
-
+from sklearn.metrics import precision_score, recall_score, confusion_matrix
 
 
 def ensure_path(path):
@@ -204,6 +204,8 @@ def train_one_step_tqdm_withF1(model, train_loader, loss_fn, optimizer, device, 
     model.train()
     loss_train = AverageMeter()
     f1_train = AverageMeter()
+    precision_train = AverageMeter()
+    recall_train = AverageMeter()
 
     if is_binary:
         acc_train = BinaryAccuracy().to(device)
@@ -211,6 +213,8 @@ def train_one_step_tqdm_withF1(model, train_loader, loss_fn, optimizer, device, 
         acc_train = Accuracy(task='multiclass', num_classes= num_classes).to(device)
     
     with tqdm(train_loader, unit='batch') as tepoch:
+        all_targets, all_preds = [], []
+
         for inputs, targets in tepoch:
             if epoch != None:
                 tepoch.set_description(f"Epoch: {epoch}")
@@ -228,7 +232,11 @@ def train_one_step_tqdm_withF1(model, train_loader, loss_fn, optimizer, device, 
             loss = loss_fn(outputs.squeeze(), targets) + 1e-8 
 
             predictions = torch.argmax(F.softmax(outputs,dim=1),dim=1).squeeze().detach().cpu()
-            f1 = f1_score(targets.cpu(), predictions)
+
+            targets_cpu = targets.cpu()
+            f1 = f1_score(targets_cpu, predictions, average='macro')
+            precision = precision_score(targets_cpu, predictions, average='macro', zero_division=1)
+            recall = recall_score(targets_cpu, predictions, average='macro', zero_division=1)
 
             loss.backward()
             
@@ -239,32 +247,46 @@ def train_one_step_tqdm_withF1(model, train_loader, loss_fn, optimizer, device, 
             optimizer.zero_grad()
             
             f1_train.update(f1)
+            precision_train.update(precision)
+            recall_train.update(recall)
             loss_train.update(loss.item())
             acc_train(outputs.squeeze(), targets.int())
             
+            all_targets.extend(targets_cpu.tolist())
+            all_preds.extend(predictions.tolist())
 
             tepoch.set_postfix(loss=f"{loss_train.avg:.4f}",
                                accuracy=f"{100.0 * acc_train.compute().item():.4f}",
-                               F1=f"{f1_train.avg:.4f}")
+                               F1=f"{f1_train.avg:.4f}",
+                               Precision=f"{precision_train.avg:.4f}",
+                               Recall=f"{recall_train.avg:.4f}")
 
             # tepoch.set_postfix(loss= loss_train.avg,
             #                     accuracy= 100.0 * acc_train.compute().item(),
             #                     F1= f1_train.avg)
 
-    return model, loss_train.avg, acc_train.compute().item(), f1_train.avg
+        cm_train = confusion_matrix(all_targets, all_preds)
+    
+    # return model, loss_train.avg, acc_train.compute().item(), f1_train.avg
+    return model, loss_train.avg, acc_train.compute().item(), f1_train.avg, precision_train.avg, recall_train.avg, cm_train
+
 
 def validation_with_tqdm_withF1(model, test_loader, loss_fn, device='cpu', is_binary=True, num_classes=None):
     model.eval()
     with torch.no_grad():
         loss_valid = AverageMeter()
         f1_valid = AverageMeter()
-        
+        precision_valid = AverageMeter()
+        recall_valid = AverageMeter()
+
         if is_binary:
             acc_valid = BinaryAccuracy().to(device)
         else:
             acc_valid = Accuracy(task='multiclass', num_classes= num_classes).to(device)
 
     with tqdm(test_loader, unit='batch') as tepoch:
+        all_targets, all_preds = [], []
+
         for inputs, targets in tepoch:
             tepoch.set_description(f"Validation - ")
 
@@ -282,21 +304,35 @@ def validation_with_tqdm_withF1(model, test_loader, loss_fn, device='cpu', is_bi
             loss = loss_fn(outputs.squeeze(), targets)
 
             predictions = torch.argmax(F.softmax(outputs,dim=1),dim=1).squeeze().detach().cpu()
-            f1 = f1_score(targets.cpu(), predictions)
+            targets_cpu = targets.cpu()
+
+            f1 = f1_score(targets_cpu, predictions, average='macro')
+            precision = precision_score(targets_cpu, predictions, average='macro', zero_division=1)
+            recall = recall_score(targets_cpu, predictions, average='macro', zero_division=1)
 
             f1_valid.update(f1)
+            precision_valid.update(precision)
+            recall_valid.update(recall)
             loss_valid.update(loss.item())
             acc_valid(outputs.squeeze(), targets.int())
 
+            all_targets.extend(targets_cpu.tolist())
+            all_preds.extend(predictions.tolist())
+            
             tepoch.set_postfix(loss=f"{loss_valid.avg:.4f}",
                                accuracy=f"{100.0 * acc_valid.compute().item():.4f}",
-                               F1=f"{f1_valid.avg:.4f}")
+                               F1=f"{f1_valid.avg:.4f}",
+                               Precision=f"{precision_valid.avg:.4f}",
+                               Recall=f"{recall_valid.avg:.4f}")
 
             # tepoch.set_postfix(loss= loss_valid.avg,
             #                     accuracy= 100.0 * acc_valid.compute().item(),
             #                     F1= f1_valid.avg)
+        cm_valid = confusion_matrix(all_targets, all_preds)
 
-    return loss_valid.avg, acc_valid.compute().item(), f1_valid.avg
+    # return loss_valid.avg, acc_valid.compute().item(), f1_valid.avg
+    return loss_valid.avg, acc_valid.compute().item(), f1_valid.avg, precision_valid.avg, recall_valid.avg, cm_valid
+
 
 
 

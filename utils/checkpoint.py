@@ -9,6 +9,7 @@ import time
 import json
 import torch
 import matplotlib.pyplot as plt
+import seaborn as sns
 import torch.optim as optim
 from sklearn.metrics import  f1_score
 from sklearn.metrics import precision_score, recall_score, confusion_matrix
@@ -174,6 +175,24 @@ def save_training_plots(loss_hist, acc_hist, save_path, file_name_prefix="traini
     plt.savefig(acc_plot_path)
     print(f"{title2} plot saved to {acc_plot_path}")
     
+
+def save_confusion_matrix(save_path, cm, epoch=None, phase="train"):
+    """Saves the confusion matrix as an image."""
+    
+    plt.figure(figsize=(10, 10))
+    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", cbar=True)
+    plt.xlabel("Predicted Labels")
+    plt.ylabel("True Labels")
+    if epoch is not None:
+        plt.title(f"Confusion Matrix - {phase.capitalize()} (Till Epoch {epoch})")
+    else:
+        plt.title(f"Confusion Matrix - {phase.capitalize()}")
+
+    save_path = os.path.join(save_path, f"Confusion_Matrix_{phase}.png")
+    plt.savefig(save_path, dpi=300, bbox_inches="tight")
+    plt.close()
+
+
 
 # Training loop that calls the save functions
 def train_and_save(model, dataset_name, model_name, emotion_dim, dataloader, optimizer, loss_fn, device, num_epochs=30):
@@ -462,11 +481,19 @@ def tvt_save_acc_loss_f1(model, dataset_name, model_name, emotion_dim, train_loa
 
     # Lists to store loss and accuracy values
     loss_hist = []
-    acc_hist = []
     loss_val_hist = []
+
+    acc_hist = []
     acc_val_hist = []
+    
     f1_hist = []
     f1_val_hist = []
+
+    precision_hist = []
+    precision_val_hist = []
+
+    recall_hist = []
+    recall_val_hist = []
 
     # Initialize the best loss variable to track the least loss
     best_loss = float('inf')  # Set to infinity initially to ensure it gets updated in the first epoch
@@ -475,20 +502,28 @@ def tvt_save_acc_loss_f1(model, dataset_name, model_name, emotion_dim, train_loa
     log_handle.info("Start Training")
     for epoch in range(num_epochs):
         # Model training (assuming train_one_step_tqdm is implemented)
-        model, loss, acc, f1 = train_one_step_tqdm_withF1(model, train_loader, loss_fn, optimizer, device, epoch, is_binary=is_binary, num_classes=num_classes)
+        model, loss, acc, f1, precision, recall, cm_train = train_one_step_tqdm_withF1(model, train_loader, loss_fn, optimizer, device, epoch, is_binary=is_binary, num_classes=num_classes)
         # Model validating (using validation loader)
-        loss_val, acc_val, f1_val = validation_with_tqdm_withF1(model,val_loader, loss_fn, device, is_binary, num_classes)
+        loss_val, acc_val, f1_val, precision_val, recall_val, cm_val = validation_with_tqdm_withF1(model,val_loader, loss_fn, device, is_binary, num_classes)
 
-        log_handle.info(f"[Train] Epoch {epoch} - Loss: {loss}, Acc: {acc}, F1: {f1} ")
-        log_handle.info(f"[Valdiation] Epoch {epoch} - Loss_Val: {loss_val}, Acc_Val: {acc_val}, F1_Val: {f1_val}")
+        log_handle.info(f"[Train] Epoch {epoch} - Loss: {loss}, Acc: {acc}, F1: {f1}, Precision: {precision}, Recall: {recall} ")
+        log_handle.info(f"[Valdiation] Epoch {epoch} - Loss_Val: {loss_val}, Acc_Val: {acc_val}, F1_Val: {f1_val}, Precision_Val: {precision_val}, Recall_Val: {recall_val} ")
 
         loss_hist.append(loss)
-        acc_hist.append(acc)
         loss_val_hist.append(loss_val)
+
+        acc_hist.append(acc)
         acc_val_hist.append(acc_val)
+
         f1_hist.append(f1)
         f1_val_hist.append(f1_val)
         
+        precision_hist.append(precision)
+        precision_val_hist.append(precision_val)
+        
+        recall_hist.append(recall)
+        recall_val_hist.append(recall_val)
+
         # TODO: should I save based on loss of train or change it to val loss ????
         # Save the model checkpoint only if the current loss is better (lower) than the best loss
         if loss < best_loss: 
@@ -515,36 +550,49 @@ def tvt_save_acc_loss_f1(model, dataset_name, model_name, emotion_dim, train_loa
             save_training_plots(loss_hist, acc_hist, save_path)
             save_training_plots(loss_val_hist, acc_val_hist, save_path,file_name_prefix="validation")
             save_training_plots(f1_hist, f1_val_hist, save_path,file_name_prefix="F1_Only",title1="F1_train", title2="F1_val")
+            save_training_plots(precision_hist, precision_val_hist, save_path,file_name_prefix="Precision_Only",title1="Precision_train", title2="Precision_val")
+            save_training_plots(recall_hist, recall_val_hist, save_path,file_name_prefix="Recall_Only",title1="Recall_train", title2="Recall_val")
+            save_confusion_matrix(save_path, cm_train, epoch=epoch, phase="train")
+            save_confusion_matrix(save_path, cm_val, epoch=epoch, phase="validation")
 
     # Load best acc models
     model_load_path_acc = os.path.join(save_path,"best_model_checkpoint_acc.pth")
     checkpoint = torch.load(model_load_path_acc)
     model.load_state_dict(checkpoint['model_state_dict'])
-    loss_test_acc, acc_test_acc, f1_test_acc = validation_with_tqdm_withF1(model,test_loader, loss_fn, device, is_binary, num_classes)
+    loss_test_acc, acc_test_acc, f1_test_acc, precision_test_acc, recall_test_acc, cm_test_acc = validation_with_tqdm_withF1(model,test_loader, loss_fn, device, is_binary, num_classes)
 
     # Load best loss models
     model_load_path_acc = os.path.join(save_path,"best_model_checkpoint_loss.pth")
     checkpoint = torch.load(model_load_path_acc)
     model.load_state_dict(checkpoint['model_state_dict'])
-    loss_test_loss, acc_test_loss, f1_test_loss = validation_with_tqdm_withF1(model,test_loader, loss_fn, device, is_binary, num_classes)
+    loss_test_loss, acc_test_loss, f1_test_loss, precision_test_loss, recall_test_loss, cm_test_loss = validation_with_tqdm_withF1(model,test_loader, loss_fn, device, is_binary, num_classes)
 
 
     # Test model performance on test data
     # loss_test, acc_test, f1_test = validation_with_tqdm_withF1(model,test_loader, loss_fn, device, is_binary, num_classes)
     # log_handle.info(f"[Test] Loss: {loss_test} , Accuracy: {acc_test}, F1-Score: {f1_test}")
 
-    log_handle.info(f"[Test-Best Loss] Loss: {loss_test_loss} , Accuracy: {acc_test_loss}, F1-Score: {f1_test_loss}")
-    log_handle.info(f"[Test-Best Accuracy] Loss: {loss_test_acc} , Accuracy: {acc_test_acc}, F1-Score: {f1_test_acc}")
+    log_handle.info(f"[Test-Best Loss] Loss: {loss_test_loss} , Accuracy: {acc_test_loss}, F1-Score: {f1_test_loss}, Precision: {precision_test_loss}, Recall: {recall_test_loss}")
+    log_handle.info(f"[Test-Best Accuracy] Loss: {loss_test_acc} , Accuracy: {acc_test_acc}, F1-Score: {f1_test_acc}, Precision: {precision_test_acc}, Recall: {recall_test_acc}")
+    
+    # save Confusion Matrix of test data
+    save_confusion_matrix(save_path, cm_test_acc, epoch=None, phase="Test_Acc")
+    save_confusion_matrix(save_path, cm_test_loss, epoch=None, phase="Test_Loss")
 
     # Save the training plots
     save_training_plots(loss_hist, acc_hist, save_path)
     save_training_plots(loss_val_hist, acc_val_hist, save_path,file_name_prefix="validation")
     save_training_plots(f1_hist, f1_val_hist, save_path,file_name_prefix="F1_Only",title1="F1_train", title2="F1_val")
+    save_training_plots(precision_hist, precision_val_hist, save_path,file_name_prefix="Precision_Only",title1="Precision_train", title2="Precision_val")
+    save_training_plots(recall_hist, recall_val_hist, save_path,file_name_prefix="Recall_Only",title1="Recall_train", title2="Recall_val")
+    save_confusion_matrix(save_path, cm_train, epoch=epoch, phase="train")
+    save_confusion_matrix(save_path, cm_train, epoch=epoch, phase="validation")
 
-    
     log_handle.info(f"[BEST ACC] Train: {max(acc_hist)} , Validation: {max(acc_val_hist)} , Test: {max(acc_test_loss,acc_test_acc)} ")
     log_handle.info(f"[BEST Loss] Train: {min(loss_hist)} , Validation: {min(loss_val_hist)} , Test: {min(loss_test_loss,loss_test_acc)} ")
     log_handle.info(f"[BEST F1] Train: {max(f1_hist)} , Validation: {max(f1_val_hist)} , Test: {max(f1_test_acc,f1_test_loss)} ")
+    log_handle.info(f"[BEST Precision] Train: {max(precision_hist)} , Validation: {max(precision_val_hist)} , Test: {max(precision_test_acc,precision_test_loss)} ")
+    log_handle.info(f"[BEST Recall] Train: {max(recall_hist)} , Validation: {max(recall_val_hist)} , Test: {max(recall_test_acc,recall_test_loss)} ")
     
     log_handle.info(f"Model Parameter Count: {get_num_params(model,1)} ")
     log_handle.info("DONE!")
@@ -552,6 +600,8 @@ def tvt_save_acc_loss_f1(model, dataset_name, model_name, emotion_dim, train_loa
     print(f"[BEST ACC] Train: {max(acc_hist)} , Validation: {max(acc_val_hist)} , Test: {max(acc_test_loss,acc_test_acc)} ")
     print(f"[BEST Loss] Train: {min(loss_hist)} , Validation: {min(loss_val_hist)} , Test: {min(loss_test_loss,loss_test_acc)} ")
     print(f"[BEST F1] Train: {max(f1_hist)} , Validation: {max(f1_val_hist)} , Test: {max(f1_test_acc,f1_test_loss)} ")
+    print(f"[BEST Precision] Train: {max(precision_hist)} , Validation: {max(precision_val_hist)} , Test: {max(precision_test_acc,precision_test_loss)} ")
+    print(f"[BEST Recall] Train: {max(recall_hist)} , Validation: {max(recall_val_hist)} , Test: {max(recall_test_acc,recall_test_loss)} ")
     print(f"Model Parameter Count: {get_num_params(model,1)} ")
     print("Training complete and data saved!")
 
