@@ -321,6 +321,33 @@ class UNET_NO_DGCNN_INCEPTION_GAT(nn.Module):
         return x
 
 
+class NO_UNET_DGCNN_INCEPTION_GAT(nn.Module):
+    '''
+    unet       -> concat       -> conv1x1    -> adaptive avg pool  -> dgcnn
+    [b,c,x,x]  -> [b,c*2,x,x]  -> [b,c,x,x]  -> [b,c,x',x']        -> [b,2]
+    '''
+    def __init__(self,in_channels=14, unet_feature_channels=[64,128,256,512], graph_feature_size=5, dgcnn_layers=2, dgcnn_hid_channels=32, n_classes=2, dropout=0.5, bias=False, linear_hid=64):
+        super().__init__()
+        self.graph_feature_size = graph_feature_size
+        
+        self.channel_fusion = nn.Conv2d(in_channels, in_channels, kernel_size=(1,1))
+
+        self.avg_pool_global = nn.AdaptiveAvgPool2d(output_size=self.graph_feature_size)
+
+        # input of dgcnn should be [batch, num_electrodes, in_channels]
+        self.dgcnn = DGCNN_ATTENTION(
+            in_channels=(self.graph_feature_size ** 2), num_electrodes=in_channels, num_layers=dgcnn_layers,
+            hid_channels=dgcnn_hid_channels, num_classes=n_classes, dropout=dropout, bias=bias, linear_hid=linear_hid)
+
+    def forward(self,x):
+        x = self.channel_fusion(x)
+        x = self.avg_pool_global(x)
+        x = torch.flatten(x,2)
+        x = self.dgcnn(x)
+        return x
+
+
+
 if __name__ == "__main__":
     x = torch.rand(10,14,22,22)
     model = block(14,8) # in_channels == out_channels * 4
@@ -357,6 +384,16 @@ if __name__ == "__main__":
     x = torch.rand(10,14,33,33)
     model = UNET_NO_DGCNN_INCEPTION_GAT(in_channels=14, unet_feature_channels=[64,128,256], graph_feature_size=5, n_classes=2,linear_hid=64)
     print(f"Number of trainable parameters: {get_num_trainable_params(model,1)}")
-    print(f"[UNET_NO_DGCNN_INCEPTION_GAT 2] original {x.shape} , output {model(x).shape}")
+    print(f"[UNET_NO_DGCNN_INCEPTION_GAT] original {x.shape} , output {model(x).shape}")
     print(100*'*')
     ###################################################################
+
+    x = torch.rand(10,14,33,33)
+    model = NO_UNET_DGCNN_INCEPTION_GAT(in_channels=14, unet_feature_channels=[64,128,256], graph_feature_size=5, n_classes=2,linear_hid=64)
+    print(f"Number of trainable parameters: {get_num_trainable_params(model,1)}")
+    print(f"[NO_UNET_DGCNN_INCEPTION_GAT] original {x.shape} , output {model(x).shape}")
+    print(100*'*')
+    ###################################################################
+
+
+
