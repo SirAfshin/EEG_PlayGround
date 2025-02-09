@@ -81,6 +81,60 @@ class TransformerGraphConv(nn.Module):
         return out
 
 
+class Chebynet_ATTENTION_Transformer(nn.Module):
+    def __init__(self, in_channels: int, num_layers: int, out_channels: int, node_dim=14, num_heads=4 ,dropout=0.5, bias=False):
+        super(Chebynet_ATTENTION_Transformer, self).__init__()
+        self.num_layers = num_layers
+        self.gc1 = nn.ModuleList()
+        for i in range(num_layers):
+            self.gc1.append(TransformerGraphConv(node_dim=node_dim, in_channels=in_channels, out_channels=out_channels, num_heads=num_heads,dropout=dropout, bias=bias))
+
+    def forward(self, x: torch.Tensor, L: torch.Tensor) -> torch.Tensor:
+        adj = generate_cheby_adj(L, self.num_layers)
+        for i in range(len(self.gc1)):
+            if i == 0:
+                result = self.gc1[i](x, adj[i])
+            else:
+                result = result+  self.gc1[i](x, adj[i])
+        result = F.relu(result)
+        return result
+
+class DGCNN_ATTENTION_Transformer(nn.Module):
+    def __init__(self,
+                 in_channels= 128, # dimension of node features
+                 num_electrodes= 14, # number of nodes (EEG Channels)
+                 num_layers= 2,
+                 hid_channels= 32,
+                 num_heads=4,
+                 num_classes= 2,
+                 dropout=0.5,
+                 bias=False,
+                 linear_hid=64):
+
+        super(DGCNN_ATTENTION_Transformer, self).__init__()
+        self.in_channels = in_channels
+        self.num_electrodes = num_electrodes
+        self.hid_channels = hid_channels
+        self.num_layers = num_layers
+        self.num_classes = num_classes
+
+        self.layer1 = Chebynet_ATTENTION_Transformer(in_channels= in_channels, num_layers=num_layers, out_channels=hid_channels, node_dim=num_electrodes, num_heads=num_heads, dropout=dropout, bias=bias)
+        self.BN1 = nn.BatchNorm1d(in_channels)
+        self.fc1 = Linear(num_electrodes * hid_channels, linear_hid)
+        self.fc2 = Linear(linear_hid, num_classes)
+        self.A = nn.Parameter(torch.FloatTensor(num_electrodes, num_electrodes))
+        nn.init.xavier_normal_(self.A)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # use transpose so that the normalizations happens on nodes(channels)
+        x = self.BN1(x.transpose(1, 2)).transpose(1, 2)
+        L = normalize_A(self.A)
+        result = self.layer1(x, L)
+        result = result.reshape(x.shape[0], -1)
+        result = F.relu(self.fc1(result))
+        result = self.fc2(result)
+        return result
+
 
 
 
@@ -773,7 +827,7 @@ if __name__ == "__main__":
     print(f"[DGCNN_ATTENTION_Multi_head] original: {x.shape},  output: {model(x).shape}")
     print('*'*100)
     ################################################################################################
-    TransformerGraphConv
+
 
     model = TransformerGraphConv(node_dim=14, in_channels=5, out_channels=12, num_heads=4, dropout=0.5, bias=True)
     x = torch.rand(10,14,5)
@@ -783,3 +837,9 @@ if __name__ == "__main__":
     print('*'*100)
     ################################################################################################
 
+    model = DGCNN_ATTENTION_Transformer(in_channels=5,num_electrodes=14, num_layers=2, hid_channels=32, num_classes=2, num_heads=4 ,dropout=0.5, bias=True)
+    x = torch.rand(10,14,5)
+    print(f"Num trainable params: {get_num_trainable_params(model,1)}")
+    print(f"[DGCNN_ATTENTION_Transformer] original: {x.shape},  output: {model(x).shape}")
+    print('*'*100)
+    ################################################################################################

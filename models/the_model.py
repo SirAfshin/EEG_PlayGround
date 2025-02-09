@@ -20,7 +20,7 @@ from einops.layers.torch import Rearrange
 from utils.utils import get_num_trainable_params, resize_tensor
 from models.Transformer import VisionTransformerEEG
 from models.cnn_based import UNET_INCEPTION
-from models.graph_models import DGCNN_ATTENTION, DGCNN_ATTENTION_Multi_head
+from models.graph_models import DGCNN_ATTENTION, DGCNN_ATTENTION_Multi_head, DGCNN_ATTENTION_Transformer
 
 class block(nn.Module):
     def __init__(
@@ -378,6 +378,41 @@ class UNET_DGCNN_INCEPTION_GAT_Multi_Head(nn.Module):
         return x
 
 
+# Using TransformerConv with dgcnn unet
+class UNET_DGCNN_INCEPTION_GAT_Transformer(nn.Module):
+    '''
+    unet       -> concat       -> conv1x1    -> adaptive avg pool  -> dgcnn
+    [b,c,x,x]  -> [b,c*2,x,x]  -> [b,c,x,x]  -> [b,c,x',x']        -> [b,2]
+    '''
+    def __init__(self,in_channels=14, unet_feature_channels=[64,128,256,512], graph_feature_size=5, dgcnn_layers=2, dgcnn_hid_channels=32, num_heads=4, n_classes=2, dropout=0.5, bias=False, linear_hid=64):
+        super().__init__()
+        self.graph_feature_size = graph_feature_size
+        
+        self.unet = UNET_INCEPTION( # [b,c,x,x]: x=17,22,33
+            in_channels=in_channels,out_channels=in_channels, feature_channels=unet_feature_channels)
+        
+        self.channel_fusion = nn.Conv2d(in_channels*2, in_channels, kernel_size=(1,1))
+
+        self.avg_pool_global = nn.AdaptiveAvgPool2d(output_size=self.graph_feature_size)
+
+        # input of dgcnn should be [batch, num_electrodes, in_channels]
+        self.dgcnn = DGCNN_ATTENTION_Transformer(
+            in_channels=(self.graph_feature_size ** 2), num_electrodes=in_channels, num_layers=dgcnn_layers,
+            hid_channels=dgcnn_hid_channels, num_heads=num_heads, num_classes=n_classes, dropout=dropout, bias=bias, linear_hid=linear_hid)
+
+    def forward(self,x):
+        x_ = self.unet(x)
+        x = torch.cat((x,x_), dim=1) # residual connection
+        x = self.channel_fusion(x)
+        x = self.avg_pool_global(x)
+        x = torch.flatten(x,2)
+        x = self.dgcnn(x)
+        return x
+
+
+
+
+
 if __name__ == "__main__":
     x = torch.rand(10,14,22,22)
     model = block(14,8) # in_channels == out_channels * 4
@@ -429,5 +464,12 @@ if __name__ == "__main__":
     model = UNET_DGCNN_INCEPTION_GAT_Multi_Head(in_channels=14, unet_feature_channels=[64,128,256], graph_feature_size=5, num_heads=4, n_classes=2, linear_hid=64)
     print(f"Number of trainable parameters: {get_num_trainable_params(model,1)}")
     print(f"[UNET_DGCNN_INCEPTION_GAT_Multi_Head] original {x.shape} , output {model(x).shape}")
+    print(100*'*')
+    ###################################################################
+
+    x = torch.rand(10,14,33,33)
+    model = UNET_DGCNN_INCEPTION_GAT_Transformer(in_channels=14, unet_feature_channels=[64,128,256], graph_feature_size=5, num_heads=4, n_classes=2, linear_hid=64)
+    print(f"Number of trainable parameters: {get_num_trainable_params(model,1)}")
+    print(f"[UNET_DGCNN_INCEPTION_GAT_Transformer] original {x.shape} , output {model(x).shape}")
     print(100*'*')
     ###################################################################
