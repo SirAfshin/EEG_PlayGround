@@ -12,8 +12,83 @@ import torch.nn.functional as F
 from torch.nn.parameter import Parameter
 
 from utils.utils import get_num_trainable_params
+# DGCNN with TransformerConv multihead is a no brainer as well
 
-#DGCNN with GATConv with multi head attetion
+class TransformerGraphConv(nn.Module):
+    def __init__(self, node_dim, in_channels, out_channels, num_heads=4, dropout=0.0, bias=False):
+        super(TransformerGraphConv, self).__init__()
+        assert out_channels % num_heads == 0
+
+        self.in_channels = in_channels
+        self.out_channels = out_channels // num_heads  # Output dim per head
+        self.num_heads = num_heads
+        self.dropout = dropout
+        
+        # Query, Key, Value transformation matrices
+        self.W_q = nn.Parameter(torch.Tensor(num_heads, in_channels, self.out_channels))
+        self.W_k = nn.Parameter(torch.Tensor(num_heads, in_channels, self.out_channels))
+        self.W_v = nn.Parameter(torch.Tensor(num_heads, in_channels, self.out_channels))
+        
+        nn.init.xavier_normal_(self.W_q)
+        nn.init.xavier_normal_(self.W_k)
+        nn.init.xavier_normal_(self.W_v)
+
+        self.matching_conv = nn.Conv1d(in_channels, out_channels, 1)
+
+        # Normalization and skip connection
+        self.norm = nn.LayerNorm(out_channels)
+        
+        self.bias = None
+        if bias:
+            self.bias = nn.Parameter(torch.FloatTensor(out_channels))
+            nn.init.zeros_(self.bias)
+    
+    def update_adj_d(self, adj):
+        """ Compute the degree matrix and normalized adjacency matrix """
+        A_hat = adj + torch.eye(adj.size(-1), device=adj.device)
+        D = torch.sum(adj, dim=-1)
+        D_neg = torch.pow(D, -1.0)  # D^(-1.0)
+        D_neg[D_neg == float('inf')] = 0  # Handle divide by zero
+        D_neg = torch.diag_embed(D_neg)
+        return D_neg, A_hat
+    
+    def forward(self, x, adj):
+        D_neg, A_hat = self.update_adj_d(adj)
+        multi_head_out = []
+        
+        for i in range(self.num_heads):
+            Q = torch.matmul(x, self.W_q[i])  # Query
+            K = torch.matmul(x, self.W_k[i])  # Key
+            V = torch.matmul(x, self.W_v[i])  # Value
+            
+            attn_scores = torch.matmul(Q, K.transpose(-2, -1)) / (self.out_channels ** 0.5)
+            attn_scores = F.softmax(attn_scores, dim=-1)
+            attn_scores = F.dropout(attn_scores, self.dropout, training=self.training)
+            
+            out = torch.matmul(attn_scores, V)
+            out = F.relu(out)
+            multi_head_out.append(out)
+        
+        out = torch.cat(multi_head_out, dim=-1)  # Concatenate across heads
+        
+        # Apply skip connection and layer norm
+        x = self.matching_conv(x.transpose(-2, -1)).transpose(-2, -1)
+        out = self.norm(out + x)
+        
+        if self.bias is not None:
+            out = out + self.bias
+            
+        return out
+
+
+
+
+
+
+
+
+
+# DGCNN with GATConv with multi head attetion
 class GraphConvAttention_Multi_Head(nn.Module):
     def __init__(self, node_dim, in_channels, out_channels, num_heads=4, dropout=0.0, bias=False):
         super(GraphConvAttention_Multi_Head, self).__init__()
@@ -698,4 +773,13 @@ if __name__ == "__main__":
     print(f"[DGCNN_ATTENTION_Multi_head] original: {x.shape},  output: {model(x).shape}")
     print('*'*100)
     ################################################################################################
-    
+    TransformerGraphConv
+
+    model = TransformerGraphConv(node_dim=14, in_channels=5, out_channels=12, num_heads=4, dropout=0.5, bias=True)
+    x = torch.rand(10,14,5)
+    adj = torch.rand(10,14,14)
+    print(f"Num trainable params: {get_num_trainable_params(model,1)}")
+    print(f"[TransformerGraphConv] original: {x.shape},  output: {model(x,adj).shape}")
+    print('*'*100)
+    ################################################################################################
+
