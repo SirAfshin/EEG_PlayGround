@@ -590,14 +590,14 @@ class UNET_INCEPTION(nn.Module):
         skip_connections = skip_connections[::-1] # reverse list of skip connections for the decoder part (up)
 
         for idx in range(0, len(self.ups), 2): # each up and double conv is a single step
-            x = self.ups[idx](x)
+            x = self.ups[idx](x) # Conv Transpose 
             skip_connection = skip_connections[idx//2]
 
             if x.shape != skip_connection.shape:
                 x = resize_tensor(x, size=skip_connection.shape[2:])
 
             concat_skip = torch.cat((skip_connection, x), dim=1) # concatenate along channel dimension (b,channel,h,w)
-            x = self.ups[idx+1](concat_skip)
+            x = self.ups[idx+1](concat_skip) # DoubleConv_Inception
 
         x = self.final_conv(x)
         
