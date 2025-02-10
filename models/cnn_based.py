@@ -603,6 +603,62 @@ class UNET_INCEPTION(nn.Module):
         
         return x
 
+# Adding conv 1x1 to concat of unet
+class UNET_INCEPTION_2(nn.Module):
+    def __init__(self, in_channels=3, out_channels=1, feature_channels=[64,128,256,512]):
+        super().__init__()
+        self.ups = nn.ModuleList()
+        self.downs = nn.ModuleList()
+        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
+
+        # Down part of Unet
+        for feature in feature_channels:
+            self.downs.append(DoubleConv_Inception(in_channels, feature))
+            in_channels = feature
+        
+        # Up part of Unet
+        for feature in reversed(feature_channels):
+            self.ups.append(
+                nn.ConvTranspose2d(feature*2, feature, kernel_size=2, stride=2), # *2 is for the concatanation
+            ) # kernel=2 strid=2 -> doubles the height and width of image
+            self.ups.append(nn.Sequential(
+                nn.Conv2d(feature,feature,kernel_size=(1,1)),
+                nn.ReLU(),
+            ))
+            self.ups.append(DoubleConv_Inception(feature*2, feature))
+
+        self.bottleneck = DoubleConv_Inception(feature_channels[-1], feature_channels[-1]*2)
+        self.final_conv = nn.Conv2d(feature_channels[0], out_channels, kernel_size=1)
+
+    def forward(self,x):
+        skip_connections=[]
+
+        for down in self.downs:
+            x = down(x)
+            skip_connections.append(x)
+            x = self.pool(x)
+
+        x = self.bottleneck(x)
+
+        skip_connections = skip_connections[::-1] # reverse list of skip connections for the decoder part (up)
+
+        for idx in range(0, len(self.ups), 3): # each up and double conv is a single step
+            x = self.ups[idx](x) # Conv Transpose 
+            skip_connection = skip_connections[idx//3]
+            skip_connection = self.ups[idx+1](skip_connection)
+
+            if x.shape != skip_connection.shape:
+                x = resize_tensor(x, size=skip_connection.shape[2:])
+
+            concat_skip = torch.cat((skip_connection, x), dim=1) # concatenate along channel dimension (b,channel,h,w)
+            x = self.ups[idx+2](concat_skip) # DoubleConv_Inception
+
+        x = self.final_conv(x)
+        
+        return x
+
+
+
 class UNET_VIT_INCEPTION(nn.Module):
     '''
     Important note: embed_dim should be devidable by n_heads
