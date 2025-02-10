@@ -146,9 +146,16 @@ if __name__ == "__main__":
 
     # model = UNET_DGCNN_INCEPTION2(in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], graph_feature_size=5, n_classes=2)
 
+    '''THE 
+    '''
+    # REAL GOOD BEST MODEL
+    # valence:89%, dominance:93%, arousal:
+    # model = UNET_DGCNN_INCEPTION_GAT_Transformer(
+    #     in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], 
+    #     graph_feature_size=5, dgcnn_layers=2, dgcnn_hid_channels=32, num_heads=4, 
+    #     n_classes=2, dropout=0.5, bias=True, linear_hid=64)
 
-    # val:89%, 
-    model = UNET_DGCNN_INCEPTION_GAT_Transformer(
+    model = UNET_DGCNN_INCEPTION_GAT_Transformer_2(
         in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], 
         graph_feature_size=5, dgcnn_layers=2, dgcnn_hid_channels=32, num_heads=4, 
         n_classes=2, dropout=0.5, bias=True, linear_hid=64)
