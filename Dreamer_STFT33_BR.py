@@ -45,7 +45,7 @@ if __name__ == "__main__":
     batch_size = 32
 
     dataset_name = 'Dreamer_STFT33_BR'
-    emotion_dim = 'valence'  # valence, dominance, or arousal
+    emotion_dim = 'dominance'  # valence, dominance, or arousal
     
     mat_path = './raw_data/DREAMER.mat'  # path to the DREAMER.mat file
     io_path = f'./saves/datasets/{dataset_name}'  # IO path to store the dataset
@@ -146,6 +146,8 @@ if __name__ == "__main__":
 
     # model = UNET_DGCNN_INCEPTION2(in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], graph_feature_size=5, n_classes=2)
 
+
+    # val:89%, 
     model = UNET_DGCNN_INCEPTION_GAT_Transformer(
         in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], 
         graph_feature_size=5, dgcnn_layers=2, dgcnn_hid_channels=32, num_heads=4, 
@@ -194,7 +196,7 @@ if __name__ == "__main__":
                                                             is_binary= False,
                                                             num_classes= 2,
                                                             en_shcheduler=False , # Enable lr scheduling
-                                                            step_size=[14],
+                                                            step_size=[10],
                                                             gamma=0.1
                                                            ) 
 
