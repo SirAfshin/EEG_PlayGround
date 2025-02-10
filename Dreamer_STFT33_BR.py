@@ -45,7 +45,7 @@ if __name__ == "__main__":
     batch_size = 32
 
     dataset_name = 'Dreamer_STFT33_BR'
-    emotion_dim = 'dominance'  # valence, dominance, or arousal
+    emotion_dim = 'valence'  # valence, dominance, or arousal
     
     mat_path = './raw_data/DREAMER.mat'  # path to the DREAMER.mat file
     io_path = f'./saves/datasets/{dataset_name}'  # IO path to store the dataset
