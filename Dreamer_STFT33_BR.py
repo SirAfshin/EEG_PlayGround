@@ -144,7 +144,13 @@ if __name__ == "__main__":
     #     embed_dim=128, depth=5, n_heads=8, mlp_ratio=4.0, qkv_bias=True,  # embed_dim=768, n_heads=6
     #     p=0.5, attn_p=0.5)
 
-    model = UNET_DGCNN_INCEPTION2(in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], graph_feature_size=5, n_classes=2)
+    # model = UNET_DGCNN_INCEPTION2(in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], graph_feature_size=5, n_classes=2)
+
+    model = UNET_DGCNN_INCEPTION_GAT_Transformer(
+        in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], 
+        graph_feature_size=5, dgcnn_layers=2, dgcnn_hid_channels=32, num_heads=4, 
+        n_classes=2, dropout=0.5, bias=True, linear_hid=64)
+
 
 
     print(f"Selected model name : {model.__class__.__name__}")
@@ -187,7 +193,7 @@ if __name__ == "__main__":
                                                             num_epochs=num_epochs,
                                                             is_binary= False,
                                                             num_classes= 2,
-                                                            en_shcheduler=True , # Enable lr scheduling
+                                                            en_shcheduler=False , # Enable lr scheduling
                                                             step_size=[14],
                                                             gamma=0.1
                                                            ) 
