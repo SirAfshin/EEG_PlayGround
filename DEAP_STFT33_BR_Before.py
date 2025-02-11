@@ -160,7 +160,7 @@ if __name__ == "__main__":
 
     model = UNET_DGCNN_INCEPTION_GAT_Transformer(
         in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], 
-        graph_feature_size=5, dgcnn_layers=2, dgcnn_hid_channels=64, num_heads=8, 
+        graph_feature_size=5, dgcnn_layers=2, dgcnn_hid_channels=32, num_heads=4, 
         n_classes=2, dropout=0.6, bias=True, linear_hid=64)
 
 
