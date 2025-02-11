@@ -149,13 +149,26 @@ if __name__ == "__main__":
     # model = UNET_DGCNN_INCEPTION(in_channels=dataset[0][0].shape[0], unet_out_channels=3, unet_feature_channels=[64,128,256], n_classes=2)
 
     # val:84.58%
-    model = UNET_DGCNN_INCEPTION2(in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], graph_feature_size=5, dgcnn_layers=2, n_classes=2)
+    # model = UNET_DGCNN_INCEPTION2(in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], graph_feature_size=5, dgcnn_layers=2, n_classes=2)
     # model = UNET_DGCNN_INCEPTION2(in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256,512], graph_feature_size=10, dgcnn_layers=10, n_classes=2)
 
-    model = UNET_DGCNN_INCEPTION_GAT(in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], graph_feature_size=5, dgcnn_layers=2, dgcnn_hid_channels=32, n_classes=2, dropout=0.5, bias=True)
+    # model = UNET_DGCNN_INCEPTION_GAT(in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], graph_feature_size=5, dgcnn_layers=2, dgcnn_hid_channels=32, n_classes=2, dropout=0.5, bias=True)
    
     # Not good
     # model = UNET_DGCNN_INCEPTION_GAT(in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256,512], graph_feature_size=5, dgcnn_layers=5, dgcnn_hid_channels=64, n_classes=2, dropout=0.6, bias=True)
+
+
+    model = UNET_DGCNN_INCEPTION_GAT_Transformer(
+        in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], 
+        graph_feature_size=5, dgcnn_layers=2, dgcnn_hid_channels=64, num_heads=8, 
+        n_classes=2, dropout=0.6, bias=True, linear_hid=64)
+
+
+    # model = NO_UNET_With_DGCNN_INCEPTION_GAT_Transformer(
+    #     in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], 
+    #     graph_feature_size=5, dgcnn_layers=2, dgcnn_hid_channels=32, num_heads=4, 
+    #     n_classes=2, dropout=0.5, bias=True, linear_hid=64)
+
 
 
     print(f"Selected model name : {model.__class__.__name__}")
@@ -177,7 +190,7 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
     
-    num_epochs = 200 # 300 500 600 800
+    num_epochs = 40 # 300 500 600 800
     model_name = dataset_name + "_" + model.__class__.__name__  
 
     print(f"Start training for {num_epochs} epoch")

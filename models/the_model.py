@@ -409,6 +409,32 @@ class UNET_DGCNN_INCEPTION_GAT_Transformer(nn.Module):
         x = self.dgcnn(x)
         return x
 
+class NO_UNET_With_DGCNN_INCEPTION_GAT_Transformer(nn.Module):
+    '''
+    unet       -> concat       -> conv1x1    -> adaptive avg pool  -> dgcnn
+    [b,c,x,x]  -> [b,c*2,x,x]  -> [b,c,x,x]  -> [b,c,x',x']        -> [b,2]
+    '''
+    def __init__(self,in_channels=14, unet_feature_channels=[64,128,256,512], graph_feature_size=5, dgcnn_layers=2, dgcnn_hid_channels=32, num_heads=4, n_classes=2, dropout=0.5, bias=False, linear_hid=64):
+        super().__init__()
+        self.graph_feature_size = graph_feature_size
+        
+        self.channel_fusion = nn.Conv2d(in_channels, in_channels, kernel_size=(1,1))
+
+        self.avg_pool_global = nn.AdaptiveAvgPool2d(output_size=self.graph_feature_size)
+
+        # input of dgcnn should be [batch, num_electrodes, in_channels]
+        self.dgcnn = DGCNN_ATTENTION_Transformer(
+            in_channels=(self.graph_feature_size ** 2), num_electrodes=in_channels, num_layers=dgcnn_layers,
+            hid_channels=dgcnn_hid_channels, num_heads=num_heads, num_classes=n_classes, dropout=dropout, bias=bias, linear_hid=linear_hid)
+
+    def forward(self,x):
+        x = self.channel_fusion(x)
+        x = self.avg_pool_global(x)
+        x = torch.flatten(x,2)
+        x = self.dgcnn(x)
+        return x
+
+
 # Add relu and leaky relu between 2 models
 class UNET_DGCNN_INCEPTION_GAT_Transformer_2(nn.Module):
     '''
