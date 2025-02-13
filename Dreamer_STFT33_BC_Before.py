@@ -45,7 +45,7 @@ if __name__ == "__main__":
     rng_num =  2024 #122
     batch_size = 32
 
-    dataset_name = 'Dreamer_STFT33_BC_After'
+    dataset_name = 'Dreamer_STFT33_BC_Before'
     emotion_dim = 'valence'  # valence, dominance, or arousal
     
     mat_path = './raw_data/DREAMER.mat'  # path to the DREAMER.mat file
@@ -55,9 +55,9 @@ if __name__ == "__main__":
     dataset = DREAMERDataset(io_path=f"{io_path}",
                             mat_path=mat_path,
                             offline_transform=transforms.Compose([
+                                BaselineCorrection(apply_to_baseline=True),
                                 STFTSpectrogram_baseline(n_fft=64, hop_length=4, contourf=False, apply_to_baseline=True), # [batch,14, 33, 33]
                                 transforms.MeanStdNormalize(apply_to_baseline=True),#MeanStdNormalize() , MinMaxNormalize()
-                                BaselineCorrection(apply_to_baseline=True),
                             ]),
                             online_transform=transforms.Compose([
                                 transforms.ToTensor(),
