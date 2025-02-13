@@ -569,7 +569,12 @@ if __name__ == "__main__":
     print(100*'*')
     ###################################################################
 
-
+    x = torch.rand(10,14,33,33)
+    model = UNET_DGCNN_INCEPTION_GAT_Transformer_Parallel(in_channels=14, unet_feature_channels=[64,128,256], graph_feature_size=5, num_heads=4, n_classes=2, linear_hid=64)
+    print(f"Number of trainable parameters: {get_num_trainable_params(model,1)}")
+    print(f"[UNET_DGCNN_INCEPTION_GAT_Transformer_Parallel] original {x.shape} , output {model(x).shape}")
+    print(100*'*')
+    ###################################################################
 
 
 
