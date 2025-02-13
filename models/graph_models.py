@@ -36,7 +36,8 @@ class DGCNN_ATTENTION_Transformer_Parallel(nn.Module):
 
         self.layer1 = Chebynet_ATTENTION_Transformer(in_channels= in_channels, num_layers=num_layers, out_channels=hid_channels, node_dim=num_electrodes, num_heads=num_heads, dropout=dropout, bias=bias)
         self.layer2 = Chebynet_ATTENTION_Transformer(in_channels= in_channels, num_layers=num_layers, out_channels=hid_channels, node_dim=num_electrodes, num_heads=num_heads, dropout=dropout, bias=bias)
-        
+        self.L_ReLU = nn.LeakyReLU()
+
         self.BN1 = nn.BatchNorm1d(in_channels)
         self.fc1 = Linear(num_electrodes * hid_channels, linear_hid)
         self.fc2 = Linear(linear_hid, num_classes)
@@ -47,8 +48,8 @@ class DGCNN_ATTENTION_Transformer_Parallel(nn.Module):
         # use transpose so that the normalizations happens on nodes(channels)
         x = self.BN1(x.transpose(1, 2)).transpose(1, 2)
         L = normalize_A(self.A)
-        result = self.layer1(x, L)
-        result2 = self.layer2(x,L)
+        result = self.L_ReLU(self.layer1(x, L))
+        result2 = self.L_ReLU(self.layer2(x,L))
         result = result + result2 # residual connection
         result = result.reshape(x.shape[0], -1)
         result = F.relu(self.fc1(result))
