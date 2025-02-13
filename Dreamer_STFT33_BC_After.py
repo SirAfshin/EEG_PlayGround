@@ -32,7 +32,7 @@ warnings.filterwarnings('ignore')
 from utils.checkpoint import train_and_save,  train_validate_and_save, train_validate_test_and_save, tvt_save_acc_loss_f1
 from utils.log import get_logger
 from utils.utils import print_var, train_one_epoch, train_one_epoch_lstm, get_num_params, train_one_step_tqdm
-from utils.transforms import STFTSpectrogram, STFTSpectrogram_baseline, BaselineCorrection
+from utils.transforms import STFTSpectrogram, STFTSpectrogram_baseline, TORCHEEGBaselineCorrection
 
 from models.STFT_Spectrogram.stft_cnn import STFT_Two_Layer_CNN_Pro, STFT_Three_Layer_CNN_Pro
 from models.STFT_Spectrogram.stft_cnn_lstm import STFT_LSTM_CNN_Model
@@ -45,7 +45,7 @@ if __name__ == "__main__":
     rng_num =  2024 #122
     batch_size = 32
 
-    dataset_name = 'Dreamer_STFT33_BC_Before'
+    dataset_name = 'Dreamer_STFT33_BC_After'
     emotion_dim = 'valence'  # valence, dominance, or arousal
     
     mat_path = './raw_data/DREAMER.mat'  # path to the DREAMER.mat file
@@ -55,9 +55,9 @@ if __name__ == "__main__":
     dataset = DREAMERDataset(io_path=f"{io_path}",
                             mat_path=mat_path,
                             offline_transform=transforms.Compose([
-                                BaselineCorrection(apply_to_baseline=True),
                                 STFTSpectrogram_baseline(n_fft=64, hop_length=4, contourf=False, apply_to_baseline=True), # [batch,14, 33, 33]
                                 transforms.MeanStdNormalize(apply_to_baseline=True),#MeanStdNormalize() , MinMaxNormalize()
+                                TORCHEEGBaselineCorrection(),
                             ]),
                             online_transform=transforms.Compose([
                                 transforms.ToTensor(),
