@@ -46,7 +46,7 @@ if __name__ == "__main__":
     batch_size = 32
 
     dataset_name = 'Dreamer_STFT33_BR_After'
-    emotion_dim = 'valence'  # valence, dominance, or arousal
+    emotion_dim = 'dominance'  # valence, dominance, or arousal
     
     mat_path = './raw_data/DREAMER.mat'  # path to the DREAMER.mat file
     io_path = f'./saves/datasets/{dataset_name}'  # IO path to store the dataset
@@ -156,7 +156,20 @@ if __name__ == "__main__":
 
     # model = UNET_NO_DGCNN_INCEPTION_GAT(in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], graph_feature_size=5, n_classes=2)
 
-    model = NO_UNET_DGCNN_INCEPTION_GAT(in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], graph_feature_size=5, n_classes=2,linear_hid=64)
+    # model = NO_UNET_DGCNN_INCEPTION_GAT(in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], graph_feature_size=5, n_classes=2,linear_hid=64)
+
+
+    model = UNET_DGCNN_INCEPTION_GAT_Transformer(
+        in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], 
+        graph_feature_size=5, dgcnn_layers=2, dgcnn_hid_channels=32, num_heads=4, 
+        n_classes=2, dropout=0.5, bias=True, linear_hid=64)
+
+
+    # model = NO_UNET_With_DGCNN_INCEPTION_GAT_Transformer(
+    #     in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], 
+    #     graph_feature_size=5, dgcnn_layers=2, dgcnn_hid_channels=32, num_heads=4, 
+    #     n_classes=2, dropout=0.5, bias=True, linear_hid=64
+    # )
 
 
     print(f"Selected model name : {model.__class__.__name__}")
@@ -170,15 +183,16 @@ if __name__ == "__main__":
     loss_fn = nn.CrossEntropyLoss()
     
     # ****************** Choose your Optimizer ******************************
-    # optimizer = optim.Adam(model.parameters(), lr=0.001) # lr = 0.0001  0.001
+    # optimizer = optim.Adam(model.parameters(), lr=0.01) # 0.1                lr = 0.0001  0.001
     optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.937,weight_decay=1e-5) # TRAIN!
-    # optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.937,weight_decay=1e-5) # SCHEDULE!
+    # optimizer = optim.SGD(model.parameters(), lr=0.175, momentum=0.937,weight_decay=1e-5) # SCHEDULE!
+    # optimizer = optim.SGD(model.parameters(), lr=0.2, momentum=0.937,weight_decay=1e-5) # SCHEDULE! for no unet  [1,20,30]
 
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
     
-    num_epochs = 200 # 300 500 600 800
+    num_epochs = 40 # 300 500 600 800
     model_name = dataset_name + "_" + model.__class__.__name__  
 
     print(f"Start training for {num_epochs} epoch")
