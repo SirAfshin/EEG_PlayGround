@@ -12,8 +12,52 @@ import torch.nn.functional as F
 from torch.nn.parameter import Parameter
 
 from utils.utils import get_num_trainable_params
-# DGCNN with TransformerConv multihead is a no brainer as well
 
+
+# DGCNN with TransformerConv multihead with parallel graph convs blocks like GLFANet
+class DGCNN_ATTENTION_Transformer_Parallel(nn.Module):
+    def __init__(self,
+                 in_channels= 128, # dimension of node features
+                 num_electrodes= 14, # number of nodes (EEG Channels)
+                 num_layers= 2,
+                 hid_channels= 32,
+                 num_heads=4,
+                 num_classes= 2,
+                 dropout=0.5,
+                 bias=False,
+                 linear_hid=64):
+
+        super(DGCNN_ATTENTION_Transformer_Parallel, self).__init__()
+        self.in_channels = in_channels
+        self.num_electrodes = num_electrodes
+        self.hid_channels = hid_channels
+        self.num_layers = num_layers
+        self.num_classes = num_classes
+
+        self.layer1 = Chebynet_ATTENTION_Transformer(in_channels= in_channels, num_layers=num_layers, out_channels=hid_channels, node_dim=num_electrodes, num_heads=num_heads, dropout=dropout, bias=bias)
+        self.layer2 = Chebynet_ATTENTION_Transformer(in_channels= in_channels, num_layers=num_layers, out_channels=hid_channels, node_dim=num_electrodes, num_heads=num_heads, dropout=dropout, bias=bias)
+        
+        self.BN1 = nn.BatchNorm1d(in_channels)
+        self.fc1 = Linear(num_electrodes * hid_channels, linear_hid)
+        self.fc2 = Linear(linear_hid, num_classes)
+        self.A = nn.Parameter(torch.FloatTensor(num_electrodes, num_electrodes))
+        nn.init.xavier_normal_(self.A)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # use transpose so that the normalizations happens on nodes(channels)
+        x = self.BN1(x.transpose(1, 2)).transpose(1, 2)
+        L = normalize_A(self.A)
+        result = self.layer1(x, L)
+        result2 = self.layer2(x,L)
+        result = result + result2 # residual connection
+        result = result.reshape(x.shape[0], -1)
+        result = F.relu(self.fc1(result))
+        result = self.fc2(result)
+        return result
+
+
+
+# DGCNN with TransformerConv multihead is a no brainer as well
 class TransformerGraphConv(nn.Module):
     def __init__(self, node_dim, in_channels, out_channels, num_heads=4, dropout=0.0, bias=False):
         super(TransformerGraphConv, self).__init__()
@@ -843,3 +887,15 @@ if __name__ == "__main__":
     print(f"[DGCNN_ATTENTION_Transformer] original: {x.shape},  output: {model(x).shape}")
     print('*'*100)
     ################################################################################################
+
+    model = DGCNN_ATTENTION_Transformer_Parallel(in_channels=5,num_electrodes=14, num_layers=2, hid_channels=32, num_classes=2, num_heads=4 ,dropout=0.5, bias=True)
+    x = torch.rand(10,14,5)
+    print(f"Num trainable params: {get_num_trainable_params(model,1)}")
+    print(f"[DGCNN_ATTENTION_Transformer_Parallel] original: {x.shape},  output: {model(x).shape}")
+    print('*'*100)
+    ################################################################################################
+
+
+
+
+
