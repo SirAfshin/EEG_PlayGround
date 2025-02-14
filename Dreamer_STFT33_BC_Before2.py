@@ -192,15 +192,15 @@ if __name__ == "__main__":
     
     # ****************** Choose your Optimizer ******************************
     # optimizer = optim.Adam(model.parameters(), lr=0.01) # 0.1                lr = 0.0001  0.001
-    # optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.937,weight_decay=1e-5) # TRAIN!
-    optimizer = optim.SGD(model.parameters(), lr=0.2, momentum=0.937,weight_decay=1e-5) # SCHEDULE!
+    optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.937,weight_decay=1e-5) # TRAIN!
+    # optimizer = optim.SGD(model.parameters(), lr=0.2, momentum=0.937,weight_decay=1e-5) # SCHEDULE!
     # optimizer = optim.SGD(model.parameters(), lr=0.2, momentum=0.937,weight_decay=1e-5) # SCHEDULE! for no unet  [1,20,30]
 
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
     
-    num_epochs = 60 # 300 500 600 800
+    num_epochs = 50 # 300 500 600 800
     model_name = dataset_name + "_" + model.__class__.__name__  
 
     print(f"Start training for {num_epochs} epoch")
@@ -221,7 +221,7 @@ if __name__ == "__main__":
                                                             num_epochs=num_epochs,
                                                             is_binary= False,
                                                             num_classes= 2,
-                                                            en_shcheduler=True , # Enable lr scheduling
+                                                            en_shcheduler=False , # Enable lr scheduling
                                                             step_size=[5,20,30],
                                                             gamma=0.1
                                                            ) 
