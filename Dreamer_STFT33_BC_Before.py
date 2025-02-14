@@ -32,7 +32,7 @@ warnings.filterwarnings('ignore')
 from utils.checkpoint import train_and_save,  train_validate_and_save, train_validate_test_and_save, tvt_save_acc_loss_f1
 from utils.log import get_logger
 from utils.utils import print_var, train_one_epoch, train_one_epoch_lstm, get_num_params, train_one_step_tqdm
-from utils.transforms import STFTSpectrogram
+from utils.transforms import STFTSpectrogram, STFTSpectrogram_baseline, TORCHEEGBaselineCorrection
 
 from models.STFT_Spectrogram.stft_cnn import STFT_Two_Layer_CNN_Pro, STFT_Three_Layer_CNN_Pro
 from models.STFT_Spectrogram.stft_cnn_lstm import STFT_LSTM_CNN_Model
@@ -40,11 +40,12 @@ from models.cnn_based import  UNET_VIT
 from models.cnn_based import UNET_VIT_TSception, UNET_VIT_INCEPTION
 from models.the_model import *
 
+
 if __name__ == "__main__":
     rng_num =  2024 #122
     batch_size = 32
 
-    dataset_name = 'Dreamer_STFT33_BR'
+    dataset_name = 'Dreamer_STFT33_BC_After'
     emotion_dim = 'valence'  # valence, dominance, or arousal
     
     mat_path = './raw_data/DREAMER.mat'  # path to the DREAMER.mat file
@@ -54,11 +55,11 @@ if __name__ == "__main__":
     dataset = DREAMERDataset(io_path=f"{io_path}",
                             mat_path=mat_path,
                             offline_transform=transforms.Compose([
-                                transforms.BaselineRemoval(),
-                                STFTSpectrogram(n_fft=64, hop_length=4, contourf=False), # [batch,14, 33, 33]
-                                transforms.MeanStdNormalize(),#MeanStdNormalize() , MinMaxNormalize()
+                                TORCHEEGBaselineCorrection(),
+                                STFTSpectrogram_baseline(n_fft=64, hop_length=4, contourf=False, apply_to_baseline=True), # [batch,14, 33, 33]
                             ]),
                             online_transform=transforms.Compose([
+                                # transforms.MeanStdNormalize(apply_to_baseline=True),#MeanStdNormalize() , MinMaxNormalize()
                                 transforms.ToTensor(),
                             ]),
                             label_transform=transforms.Compose([
@@ -144,21 +145,24 @@ if __name__ == "__main__":
     #     embed_dim=128, depth=5, n_heads=8, mlp_ratio=4.0, qkv_bias=True,  # embed_dim=768, n_heads=6
     #     p=0.5, attn_p=0.5)
 
-    # model = UNET_DGCNN_INCEPTION2(in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], graph_feature_size=5, n_classes=2)
+    # # model = UNET_DGCNN_INCEPTION2(in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], graph_feature_size=5, n_classes=2)
+    # model = UNET_DGCNN_INCEPTION2(in_channels=dataset[0][0].shape[0], 
+    #                               unet_feature_channels=[64,128,256,512,1024], 
+    #                               graph_feature_size=5,
+    #                               dgcnn_layers=4, 
+    #                               n_classes=2)
 
-    # model = UNET_DGCNN_INCEPTION_GAT_Transformer_2(
-    #     in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], 
-    #     graph_feature_size=5, dgcnn_layers=2, dgcnn_hid_channels=32, num_heads=4, 
-    #     n_classes=2, dropout=0.5, bias=True, linear_hid=64)
+    # model = UNET_DGCNN_INCEPTION_GAT(in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], graph_feature_size=5, dgcnn_layers=2, dgcnn_hid_channels=32, n_classes=2, dropout=0.5, bias=True)
 
-    '''THE 
-    '''
-    # REAL GOOD BEST MODEL
-    # valence:89%, dominance:93%, arousal:
-    # model = UNET_DGCNN_INCEPTION_GAT_Transformer(
-    #     in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], 
-    #     graph_feature_size=5, dgcnn_layers=2, dgcnn_hid_channels=32, num_heads=4, 
-    #     n_classes=2, dropout=0.5, bias=True, linear_hid=64)
+    # model = UNET_NO_DGCNN_INCEPTION_GAT(in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], graph_feature_size=5, n_classes=2)
+
+    # model = NO_UNET_DGCNN_INCEPTION_GAT(in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], graph_feature_size=5, n_classes=2,linear_hid=64)
+
+
+    model = UNET_DGCNN_INCEPTION_GAT_Transformer(
+        in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], 
+        graph_feature_size=5, dgcnn_layers=2, dgcnn_hid_channels=32, num_heads=4, 
+        n_classes=2, dropout=0.5, bias=True, linear_hid=64)
 
 
     # model = NO_UNET_With_DGCNN_INCEPTION_GAT_Transformer(
@@ -166,11 +170,6 @@ if __name__ == "__main__":
     #     graph_feature_size=5, dgcnn_layers=2, dgcnn_hid_channels=32, num_heads=4, 
     #     n_classes=2, dropout=0.5, bias=True, linear_hid=64
     # )
-    
-    model = UNET_DGCNN_INCEPTION_GAT_Transformer_Parallel(
-        in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], 
-        graph_feature_size=5, dgcnn_layers=4, dgcnn_hid_channels=32, num_heads=4, 
-        n_classes=2, dropout=0.5, bias=True, linear_hid=64)
 
 
     print(f"Selected model name : {model.__class__.__name__}")
@@ -184,15 +183,16 @@ if __name__ == "__main__":
     loss_fn = nn.CrossEntropyLoss()
     
     # ****************** Choose your Optimizer ******************************
-    # optimizer = optim.Adam(model.parameters(), lr=0.01) # lr = 0.0001  0.001
+    # optimizer = optim.Adam(model.parameters(), lr=0.01) # 0.1                lr = 0.0001  0.001
     optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.937,weight_decay=1e-5) # TRAIN!
-    # optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.937,weight_decay=1e-5) # SCHEDULE!
+    # optimizer = optim.SGD(model.parameters(), lr=0.175, momentum=0.937,weight_decay=1e-5) # SCHEDULE!
+    # optimizer = optim.SGD(model.parameters(), lr=0.2, momentum=0.937,weight_decay=1e-5) # SCHEDULE! for no unet  [1,20,30]
 
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
     
-    num_epochs = 40 # 300 500 600 800
+    num_epochs = 60 # 300 500 600 800
     model_name = dataset_name + "_" + model.__class__.__name__  
 
     print(f"Start training for {num_epochs} epoch")
@@ -213,8 +213,8 @@ if __name__ == "__main__":
                                                             num_epochs=num_epochs,
                                                             is_binary= False,
                                                             num_classes= 2,
-                                                            en_shcheduler=True , # Enable lr scheduling
-                                                            step_size=[10],
+                                                            en_shcheduler=False , # Enable lr scheduling
+                                                            step_size=[5,20,30],
                                                             gamma=0.1
                                                            ) 
 
