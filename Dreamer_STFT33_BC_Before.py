@@ -59,7 +59,7 @@ if __name__ == "__main__":
                                 STFTSpectrogram_baseline(n_fft=64, hop_length=4, contourf=False, apply_to_baseline=True), # [batch,14, 33, 33]
                             ]),
                             online_transform=transforms.Compose([
-                                # transforms.MeanStdNormalize(apply_to_baseline=True),#MeanStdNormalize() , MinMaxNormalize()
+                                transforms.MeanStdNormalize(apply_to_baseline=True),#MeanStdNormalize() , MinMaxNormalize()
                                 transforms.ToTensor(),
                             ]),
                             label_transform=transforms.Compose([
@@ -159,10 +159,11 @@ if __name__ == "__main__":
     # model = NO_UNET_DGCNN_INCEPTION_GAT(in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], graph_feature_size=5, n_classes=2,linear_hid=64)
 
 
-    model = UNET_DGCNN_INCEPTION_GAT_Transformer(
-        in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], 
-        graph_feature_size=5, dgcnn_layers=2, dgcnn_hid_channels=32, num_heads=4, 
-        n_classes=2, dropout=0.5, bias=True, linear_hid=64)
+    '''THE'''
+    # model = UNET_DGCNN_INCEPTION_GAT_Transformer(
+    #     in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], 
+    #     graph_feature_size=5, dgcnn_layers=2, dgcnn_hid_channels=32, num_heads=4, 
+    #     n_classes=2, dropout=0.5, bias=True, linear_hid=64)
 
 
     # model = NO_UNET_With_DGCNN_INCEPTION_GAT_Transformer(
@@ -170,6 +171,12 @@ if __name__ == "__main__":
     #     graph_feature_size=5, dgcnn_layers=2, dgcnn_hid_channels=32, num_heads=4, 
     #     n_classes=2, dropout=0.5, bias=True, linear_hid=64
     # )
+
+
+    model = UNET_DGCNN_INCEPTION_GAT_Transformer_Parallel(
+        in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], 
+        graph_feature_size=5, dgcnn_layers=4, dgcnn_hid_channels=32, num_heads=4, 
+        n_classes=2, dropout=0.5, bias=True, linear_hid=64)
 
 
     print(f"Selected model name : {model.__class__.__name__}")
@@ -184,8 +191,8 @@ if __name__ == "__main__":
     
     # ****************** Choose your Optimizer ******************************
     # optimizer = optim.Adam(model.parameters(), lr=0.01) # 0.1                lr = 0.0001  0.001
-    optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.937,weight_decay=1e-5) # TRAIN!
-    # optimizer = optim.SGD(model.parameters(), lr=0.175, momentum=0.937,weight_decay=1e-5) # SCHEDULE!
+    # optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.937,weight_decay=1e-5) # TRAIN!
+    optimizer = optim.SGD(model.parameters(), lr=0.2, momentum=0.937,weight_decay=1e-5) # SCHEDULE!
     # optimizer = optim.SGD(model.parameters(), lr=0.2, momentum=0.937,weight_decay=1e-5) # SCHEDULE! for no unet  [1,20,30]
 
 
@@ -213,7 +220,7 @@ if __name__ == "__main__":
                                                             num_epochs=num_epochs,
                                                             is_binary= False,
                                                             num_classes= 2,
-                                                            en_shcheduler=False , # Enable lr scheduling
+                                                            en_shcheduler=True , # Enable lr scheduling
                                                             step_size=[5,20,30],
                                                             gamma=0.1
                                                            ) 
