@@ -534,6 +534,33 @@ class BandPassFilterEEG(EEGTransform):
 
 
 if __name__ == "__main__":
+    
+    print('*'*20)
+    x = torch.Tensor([[[1,3],[2,4]]])
+    print(x.mean(-1))
+    print(x.mean(-2))
+    print(x.mean(0))
+    print('*'*20)
+
+    x = torch.rand(1,33,33)
+    t = TORCHEEGBaselineCorrection(-2)
+    print(x.shape)
+    # print(x - x.mean(-1))
+    print('*'*20)
+    # print(t(eeg=x,baseline=x))
+    
+    plt.figure()
+    plt.imshow(x[0])
+    plt.figure()
+    plt.imshow(t(eeg=x,baseline=x)['eeg'][0])
+    plt.figure()
+    plt.imshow(t(eeg=x,baseline=x)['baseline'][0])
+
+
+    plt.show()
+    import sys
+    sys.exit()
+    ###########################################
     t = STFTSpectrogram_baseline(n_fft=64, hop_length=4, apply_to_baseline=True)
     output = t(eeg=np.random.randn(1,32, 128), baseline=np.random.randn(1,32, 128))
 
