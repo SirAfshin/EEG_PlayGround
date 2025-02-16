@@ -77,7 +77,9 @@ if __name__ == "__main__":
     # print(dataset[0][1])
 
     # sys.exit()
-
+    # plt.imshow(dataset[0][0][0])
+    # plt.show()
+    # sys.exit()
 
     # Split train val test 
     split_type = 'group_by_trial'

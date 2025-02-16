@@ -56,10 +56,10 @@ if __name__ == "__main__":
                             mat_path=mat_path,
                             offline_transform=transforms.Compose([
                                 STFTSpectrogram_baseline(n_fft=64, hop_length=4, contourf=False, apply_to_baseline=True), # [batch,14, 33, 33]
-                                # transforms.MeanStdNormalize(apply_to_baseline=True),#MeanStdNormalize() , MinMaxNormalize()
                                 TORCHEEGBaselineCorrection(),
                             ]),
                             online_transform=transforms.Compose([
+                                # transforms.MeanStdNormalize(apply_to_baseline=True),#MeanStdNormalize() , MinMaxNormalize()
                                 transforms.ToTensor(),
                             ]),
                             label_transform=transforms.Compose([
@@ -78,7 +78,9 @@ if __name__ == "__main__":
     # print(dataset[0][1])
 
     # sys.exit()
-
+    # plt.imshow(dataset[0][0][0])
+    # plt.show()
+    # sys.exit()
 
     # Split train val test 
     split_type = 'group_by_trial'
@@ -218,7 +220,7 @@ if __name__ == "__main__":
                                                             num_epochs=num_epochs,
                                                             is_binary= False,
                                                             num_classes= 2,
-                                                            en_shcheduler=True , # Enable lr scheduling
+                                                            en_shcheduler=False , # Enable lr scheduling
                                                             step_size=[3,20,30],
                                                             gamma=0.1
                                                            ) 
