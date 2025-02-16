@@ -61,7 +61,7 @@ if __name__ == "__main__":
 
                             ]),
                             online_transform=transforms.Compose([
-                                # transforms.MeanStdNormalize(apply_to_baseline=True),#MeanStdNormalize() , MinMaxNormalize()
+                                transforms.MeanStdNormalize(apply_to_baseline=True),#MeanStdNormalize() , MinMaxNormalize()
                                 transforms.ToTensor(),
                             ]),
                             label_transform=transforms.Compose([
@@ -79,7 +79,27 @@ if __name__ == "__main__":
     # print(dataset[0][0].shape)
     # print(dataset[0][1])
 
-    # sys.exit()
+    import matplotlib.pyplot as plt
+
+    # Number of images
+    num_images = 14
+    rows = 3
+    cols = (num_images + rows - 1) // rows  # Calculate the number of columns needed
+
+    fig, axes = plt.subplots(rows, cols, figsize=(15, 10))
+
+    for i, ax in enumerate(axes.flatten()):
+        if i < num_images:
+            ax.imshow(dataset[0][0][i])#, cmap='gray')  # Adjust cmap if needed
+            ax.set_title(f"Image {i}")
+            ax.axis("off")  # Hide axes
+        else:
+            ax.axis("off")  # Hide empty subplots
+
+    plt.tight_layout()
+    plt.show()
+
+    sys.exit()
 
 
     # Split train val test 
@@ -199,7 +219,7 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
     
-    num_epochs = 40 # 300 500 600 800
+    num_epochs = 5 # 300 500 600 800
     model_name = dataset_name + "_" + model.__class__.__name__  
 
     print(f"Start training for {num_epochs} epoch")

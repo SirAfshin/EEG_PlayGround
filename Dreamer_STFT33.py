@@ -76,7 +76,27 @@ if __name__ == "__main__":
     # print(dataset[0][0].shape)
     # print(dataset[0][1])
 
-    # sys.exit()
+    import matplotlib.pyplot as plt
+
+    # Number of images
+    num_images = 14
+    rows = 3
+    cols = (num_images + rows - 1) // rows  # Calculate the number of columns needed
+
+    fig, axes = plt.subplots(rows, cols, figsize=(15, 10))
+
+    for i, ax in enumerate(axes.flatten()):
+        if i < num_images:
+            ax.imshow(dataset[0][0][i])#, cmap='gray')  # Adjust cmap if needed
+            ax.set_title(f"Image {i}")
+            ax.axis("off")  # Hide axes
+        else:
+            ax.axis("off")  # Hide empty subplots
+
+    plt.tight_layout()
+    plt.show()
+
+    sys.exit()
 
 
     # Split train val test 
