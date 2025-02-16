@@ -189,8 +189,8 @@ if __name__ == "__main__":
     
     # ****************** Choose your Optimizer ******************************
     # optimizer = optim.Adam(model.parameters(), lr=0.01) # 0.1                lr = 0.0001  0.001
-    optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.937,weight_decay=1e-5) # TRAIN!
-    # optimizer = optim.SGD(model.parameters(), lr=0.175, momentum=0.937,weight_decay=1e-5) # SCHEDULE!
+    # optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.937,weight_decay=1e-5) # TRAIN!
+    optimizer = optim.SGD(model.parameters(), lr=0.08, momentum=0.937,weight_decay=1e-5) # SCHEDULE!
     # optimizer = optim.SGD(model.parameters(), lr=0.2, momentum=0.937,weight_decay=1e-5) # SCHEDULE! for no unet  [1,20,30]
 
 
@@ -218,8 +218,8 @@ if __name__ == "__main__":
                                                             num_epochs=num_epochs,
                                                             is_binary= False,
                                                             num_classes= 2,
-                                                            en_shcheduler=False , # Enable lr scheduling
-                                                            step_size=[5,20,30],
+                                                            en_shcheduler=True , # Enable lr scheduling
+                                                            step_size=[3,20,30],
                                                             gamma=0.1
                                                            ) 
 
