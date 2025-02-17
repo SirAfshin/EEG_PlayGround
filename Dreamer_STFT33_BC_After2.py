@@ -46,7 +46,7 @@ if __name__ == "__main__":
     batch_size = 32
 
     dataset_name = 'Dreamer_STFT33_BC_After2'
-    emotion_dim = 'valence'  # valence, dominance, or arousal
+    emotion_dim = 'arousal'  # valence, dominance, or arousal
     
     mat_path = './raw_data/DREAMER.mat'  # path to the DREAMER.mat file
     io_path = f'./saves/datasets/{dataset_name}'  # IO path to store the dataset
@@ -201,7 +201,7 @@ if __name__ == "__main__":
     # optimizer = optim.Adam(model.parameters(), lr=0.01) # 0.1                lr = 0.0001  0.001
     # optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.937,weight_decay=1e-5) # TRAIN!
     optimizer = optim.SGD(model.parameters(), lr=0.05, momentum=0.937,weight_decay=1e-5) # Parallel UNET DGCNN!
-    # optimizer = optim.SGD(model.parameters(), lr=0.2, momentum=0.937,weight_decay=1e-5) # SCHEDULE! for no unet  [1,20,30]
+    # optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.937,weight_decay=1e-5) # SCHEDULE! for no unet  [1,20,30]
 # lr = 0.05 OK
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
