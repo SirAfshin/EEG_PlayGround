@@ -47,7 +47,7 @@ class DGCNN_ATTENTION_Transformer_Parallel(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # use transpose so that the normalizations happens on nodes(channels)
         x = self.BN1(x.transpose(1, 2)).transpose(1, 2)
-        L = normalize_A(self.A)
+        L = normalize_A(self.A, symmetry=True) ###
         result = self.L_ReLU(self.layer1(x, L))
         result2 = self.L_ReLU(self.layer2(x,L))
         result = result + result2 # residual connection
@@ -889,7 +889,7 @@ if __name__ == "__main__":
     print('*'*100)
     ################################################################################################
 
-    model = DGCNN_ATTENTION_Transformer_Parallel(in_channels=5,num_electrodes=14, num_layers=2, hid_channels=32, num_classes=2, num_heads=4 ,dropout=0.5, bias=True)
+    model = DGCNN_ATTENTION_Transformer_Parallel(in_channels=5,num_electrodes=14, num_layers=4, hid_channels=32, num_classes=2, num_heads=4 ,dropout=0.5, bias=True)
     x = torch.rand(10,14,5)
     print(f"Num trainable params: {get_num_trainable_params(model,1)}")
     print(f"[DGCNN_ATTENTION_Transformer_Parallel] original: {x.shape},  output: {model(x).shape}")
