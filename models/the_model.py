@@ -462,7 +462,7 @@ class UNET_DGCNN_INCEPTION_GAT_Transformer_Parallel(nn.Module):
         x_ = self.unet(x)
         x = torch.cat((x,x_), dim=1) # residual connection
         x = self.channel_fusion(x)
-        # x = nn.functional.leaky_relu(x) ## added ReLU
+        x = nn.functional.leaky_relu(x) ## added ReLU
         x = self.avg_pool_global(x)
         x = torch.flatten(x,2)
         x = self.dgcnn(x)

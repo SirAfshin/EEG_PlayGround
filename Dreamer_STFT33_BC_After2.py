@@ -46,7 +46,7 @@ if __name__ == "__main__":
     batch_size = 32
 
     dataset_name = 'Dreamer_STFT33_BC_After2'
-    emotion_dim = 'arousal'  # valence, dominance, or arousal
+    emotion_dim = 'valence'  # valence, dominance, or arousal
     
     mat_path = './raw_data/DREAMER.mat'  # path to the DREAMER.mat file
     io_path = f'./saves/datasets/{dataset_name}'  # IO path to store the dataset
@@ -174,10 +174,18 @@ if __name__ == "__main__":
     #     n_classes=2, dropout=0.5, bias=True, linear_hid=64
     # )
     
-    model = UNET_DGCNN_INCEPTION_GAT_Transformer_Parallel(
-        in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], 
+
+    '''the'''
+    # model = UNET_DGCNN_INCEPTION_GAT_Transformer_Parallel(
+    #     in_channels=dataset[0][0].shape[0], unet_feature_channels=[64,128,256], 
+    #     graph_feature_size=5, dgcnn_layers=4, dgcnn_hid_channels=32, num_heads=4, 
+    #     n_classes=2, dropout=0.5, bias=True, linear_hid=64)
+    
+    model = DGCNN_INCEPTION_GAT_Transformer_Parallel(
+        in_channels=dataset[0][0].shape[0], 
         graph_feature_size=5, dgcnn_layers=4, dgcnn_hid_channels=32, num_heads=4, 
         n_classes=2, dropout=0.5, bias=True, linear_hid=64)
+
 
     print(f"Selected model name : {model.__class__.__name__}")
     # print(f"Model parameter count: {get_num_params(model,1)}")
@@ -192,7 +200,7 @@ if __name__ == "__main__":
     # ****************** Choose your Optimizer ******************************
     # optimizer = optim.Adam(model.parameters(), lr=0.01) # 0.1                lr = 0.0001  0.001
     # optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.937,weight_decay=1e-5) # TRAIN!
-    optimizer = optim.SGD(model.parameters(), lr=0.05, momentum=0.937,weight_decay=1e-5) # SCHEDULE!
+    optimizer = optim.SGD(model.parameters(), lr=0.05, momentum=0.937,weight_decay=1e-5) # Parallel UNET DGCNN!
     # optimizer = optim.SGD(model.parameters(), lr=0.2, momentum=0.937,weight_decay=1e-5) # SCHEDULE! for no unet  [1,20,30]
 # lr = 0.05 OK
 
