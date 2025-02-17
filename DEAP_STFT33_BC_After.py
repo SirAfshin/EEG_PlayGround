@@ -49,6 +49,7 @@ if __name__ == "__main__":
 
     for model_num in range(2):
         for emotion_dim in emotion_dims:
+            print(f"\n{emotion_dim} , {model_num}\n")
             try: 
                 del dataset, train_loader, val_loader, test_loader ,model, optimizer, loss_fn
             except:
